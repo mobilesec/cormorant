@@ -1,0 +1,46 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context="at.usmile.gaitmodule.RecordTrainingDataActivity"
+    android:weightSum="1">
+
+    <TextView
+        android:id="@+id/userInfoRecording"
+        android:layout_width="match_parent"
+        android:layout_height="250dp"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_weight="2.77" />
+
+    <Button
+        android:id="@+id/showInformation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:enabled="true"
+        android:onClick="showInformationAlertPressed"
+        android:text="Show Information"/>
+
+    <Button
+        android:id="@+id/startDataRecordingBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:enabled="false"
+        android:onClick="startRecordingGaitDataPressed"
+        android:text="Start Data Recording"/>
+
+    <Button
+        android:id="@+id/stopDataRecordingBtn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:enabled="false"
+        android:onClick="stopRecordingGaitDataPressed"
+        android:text="Stop Data Recording"
+        android:layout_gravity="center_horizontal" />
+
+</LinearLayout>

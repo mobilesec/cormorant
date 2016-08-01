@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <integer-array name="Pre_Sets">
+
+
+        <item>0</item>
+        <!-- sensor Sampling Rate -->
+
+    </integer-array>
+</resources>

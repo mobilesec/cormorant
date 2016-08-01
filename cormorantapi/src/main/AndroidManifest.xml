@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="at.usmile.cormorant.api" android:versionCode="1" android:versionName="1.0">
+
+    <permission
+        android:name="at.usmile.cormorant.REGISTER_AUTH_PLUGIN"
+        android:description="@string/register_auth_plugin_permission_description"
+        android:icon="@mipmap/ic_launcher"
+        android:label="Register Authentication Plugin"
+        android:protectionLevel="dangerous" />
+
+    <permission
+        android:name="at.usmile.cormorant.permission.READ_PLUGIN_DATA"
+        android:description="@string/read_plugin_data_permission_description"
+        android:icon="@mipmap/ic_launcher"
+        android:label="Read Plugin Data"
+        android:protectionLevel="normal" />
+
+    <application android:allowBackup="true" android:label="@string/app_name">
+
+    </application>
+
+    <uses-sdk android:minSdkVersion="8" android:targetSdkVersion="21" />
+
+</manifest>

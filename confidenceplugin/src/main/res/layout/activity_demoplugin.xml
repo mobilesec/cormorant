@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+    <TextView
+        android:id="@+id/textViewConfidence"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Confidence: %1$s" />
+
+    <SeekBar
+        android:id="@+id/seekBarConfidence"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <Button
+        android:id="@+id/buttonSendConfidence"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="sendConfidence"
+        android:text="SEND CONFIDENCE TO AUTH. FRAMEWORK" />
+
+</LinearLayout>

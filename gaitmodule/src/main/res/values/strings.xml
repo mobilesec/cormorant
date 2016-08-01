@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Gait</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="action_reset">Reset</string>
+    <string name="action_exit">Exit</string>
+    <string name="title_activity_record_training_data">Train</string>
+    <string name="title_activity_user_list_display">UserListDisplayActivity</string>
+    <string name="title_activity_existing_user">Existing User</string>
+    <string name="title_activity_gait_authentication_test">GaitAuthenticationTest</string>
+    <string name="title_activity_reset">Reset</string>
+
+</resources>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="fhdw.locationriskplugin">
+
+    <uses-permission android:name="at.usmile.cormorant.REGISTER_AUTH_PLUGIN" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+        <service
+            android:name=".LocationRiskService"
+            android:enabled="true"
+            android:exported="true">
+
+            <meta-data
+                android:name="apiVersion"
+                android:value="1" />
+            <meta-data
+                android:name="pluginType"
+                android:value="risk" />
+            <meta-data
+                android:name="title"
+                android:value="Location Risk Plugin" />
+            <meta-data
+                android:name="description"
+                android:value="Calculates risk by checking the context of the current location" />
+
+            <!-- <meta-data
+                android:name="configurationActivity"
+                android:value="" />
+            <meta-data
+                android:name="explicitAuthActivity"
+                android:value="" /> -->
+
+            <meta-data
+                android:name="implicit"
+                android:value="true" />
+        </service>
+
+        <meta-data
+            android:name="startupService"
+            android:value="LocationRiskService" />
+    </application>
+
+</manifest>

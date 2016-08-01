@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <EditTextPreference
+        android:inputType="textNoSuggestions"
+        android:key="OWNER"
+        android:title="Please enter device owner name" />
+
+
+    <EditTextPreference
+        android:inputType="numberDecimal"
+        android:key="threshold"
+        android:title="Gait cycle matching threshold"
+        android:summary = "Threshold value should be between (0.3-0.5)"
+        android:defaultValue="0.40"/>
+
+    <ListPreference
+        android:defaultValue="3"
+        android:entries="@array/securityLevlesSettings"
+        android:entryValues="@array/securityLevelsValues"
+        android:key="securityLevels"
+        android:summary="Balance between security and usability"
+        android:title="Security Level" />
+
+
+</PreferenceScreen>

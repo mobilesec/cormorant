@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="at.usmile.cormorant.confidenceplugin">
+
+    <uses-permission android:name="at.usmile.cormorant.REGISTER_AUTH_PLUGIN" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+        <activity
+            android:name=".ConfidencePluginActivity"
+            android:exported="true" />
+
+        <activity
+            android:name=".ConfidenceConfigurationActivity"
+            android:exported="true" />
+
+        <service
+            android:name=".ConfidencePluginService"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="at.usmile.cormorant.permission.READ_PLUGIN_DATA">
+            <meta-data
+                android:name="apiVersion"
+                android:value="1" />
+            <meta-data
+                android:name="pluginType"
+                android:value="confidence" />
+            <meta-data
+                android:name="title"
+                android:value="Demo Authentication Plugin" />
+            <meta-data
+                android:name="description"
+                android:value="Demo Authentication Plugin description" />
+            <meta-data
+                android:name="configurationActivity"
+                android:value="ConfidenceConfigurationActivity" />
+            <meta-data
+                android:name="explicitAuthActivity"
+                android:value="ConfidencePluginActivity" />
+            <meta-data
+                android:name="implicit"
+                android:value="false" />
+        </service>
+
+        <meta-data
+            android:name="startupService"
+            android:value="ConfidencePluginService" />
+    </application>
+
+</manifest>

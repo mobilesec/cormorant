@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/menuRemovePlugins"
+        android:title="@string/menu_remove_plugins_title" />
+    <item android:id="@+id/menuRemoveFramework"
+        android:title="@string/menu_remove_framework_title" />
+</menu>

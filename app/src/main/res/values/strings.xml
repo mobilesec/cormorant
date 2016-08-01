@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Authentication Framework</string>
+    <string name="menu_remove_plugins_title">Remove all Plugins</string>
+    <string name="menu_remove_framework_title">Remove Framework</string>
+</resources>

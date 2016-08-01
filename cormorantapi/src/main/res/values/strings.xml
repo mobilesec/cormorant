@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">CORMORANT API</string>
+    <string name="register_auth_plugin_permission_description">Register as an authentication plugin capable of locking or unlocking the device</string>
+    <string name="read_plugin_data_permission_description">Read data of an authentication plugin</string>
+</resources>

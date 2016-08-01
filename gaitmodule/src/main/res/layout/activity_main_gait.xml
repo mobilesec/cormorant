@@ -1,0 +1,60 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/AppBaseTheme"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="fill"
+    android:orientation="vertical"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context="at.usmile.gaitmodule.MainGaitActivity">
+
+    <Button
+        android:id="@+id/trainingButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start"
+        android:onClick="TrainButtonPressed"
+        android:text="Train" />
+
+    <Button
+        android:id="@+id/testingButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="26dp"
+        android:onClick="TestButtonPressed"
+        android:text="Test" />
+
+    <TextView
+        android:id="@+id/userInfoText"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="43dp"
+        android:layout_weight="0.06"
+        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+    <Button
+        android:id="@+id/Setting"
+        style="@style/AppTheme"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/Reset"
+        android:layout_alignBottom="@+id/Reset"
+        android:layout_toLeftOf="@+id/Reset"
+        android:onClick="settingButtonPressed"
+        android:text="Settings" />
+
+    <Button
+        android:id="@+id/Reset"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="158dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="45dp"
+        android:layout_marginLeft="85dp"
+
+        android:onClick="ResetButtonPressed"
+        android:text="Reset" />
+
+</LinearLayout>
