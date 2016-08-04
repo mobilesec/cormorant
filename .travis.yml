@@ -6,3 +6,4 @@ android:
 
 script:
     - ./gradlew build
+    
