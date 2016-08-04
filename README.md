@@ -1,3 +1,5 @@
+![travis status](https://travis-ci.org/mobilesec/cormorant.svg?branch=master)
+
 # Cormorant
 CORMORANT is an extensible, risk-aware, multi-modal, crossdevice authentication framework that enables transparent
 continuous authentication using different biometrics across multiple trusted devices.
