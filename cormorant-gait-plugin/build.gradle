@@ -37,5 +37,5 @@ dependencies {
     compile 'com.github.tony19:logback-android-classic:1.1.1-4'
     testCompile 'junit:junit:4.12'
     testCompile 'org.hamcrest:hamcrest-library:1.3'
-    compile project(':cormorantapi')
+    compile project(':cormorant-api')
 }

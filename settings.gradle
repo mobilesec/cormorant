@@ -1,1 +1,6 @@
-include ':app', ':cormorantapi', ':confidenceplugin', ':gaitmodule', ':riskplugin', ':locationriskplugin'
+include 'cormorant-framework'
+include 'cormorant-api'
+include 'cormorant-confidence-plugin'
+include 'cormorant-gait-module'
+include 'cormorant-risk-plugin'
+include 'cormorant-location-risk-plugin'
