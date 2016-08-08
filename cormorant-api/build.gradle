@@ -123,11 +123,22 @@ artifacts {
 }
 
 bintray {
-    Properties properties = new Properties()
-    properties.load(project.rootProject.file('local.properties').newDataInputStream())
+    def localProperties = new File('local.properties')
+    def password = 'bogus'
 
-    user = properties.getProperty("bintray.user")
-    key = properties.getProperty("bintray.apikey")
+    // For deployment, you need to have a local.properties file with your bintray user and key. For
+    // building, we don't need this file.
+    if(localProperties.exists()) {
+        Properties properties = new Properties()
+        properties.load(project.rootProject.file('local.properties').newDataInputStream())
+
+        user = properties.getProperty("bintray.user")
+        key = properties.getProperty("bintray.apikey")
+        password = properties.getProperty("bintray.gpg.password")
+    } else {
+        user = 'bogus'
+        key = 'bogus'
+    }
 
     configurations = ['archives']
     pkg {
@@ -144,7 +155,7 @@ bintray {
             desc = libraryDescription
             gpg {
                 sign = true //Determines whether to GPG sign the files. The default is false
-                passphrase = properties.getProperty("bintray.gpg.password")
+                passphrase = password
                 //Optional. The passphrase for GPG signing'
             }
         }
