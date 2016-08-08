@@ -1,4 +1,7 @@
-![travis status](https://travis-ci.org/mobilesec/cormorant.svg?branch=master)
+[![travis status](https://travis-ci.org/mobilesec/cormorant.svg?branch=master)](https://travis-ci.org/mobilesec/cormorant)
+[![GitHub release](https://img.shields.io/github/release/mobilesec/cormorant.svg?maxAge=2592000)]()
+[![GitHub tag](https://img.shields.io/github/tag/mobilesec/cormorant.svg?maxAge=2592000)]()
+[![License](http://img.shields.io/:license-Apache 2.0-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
 
 # Cormorant
 CORMORANT is an extensible, risk-aware, multi-modal, crossdevice authentication framework that enables transparent
@@ -7,11 +10,29 @@ continuous authentication using different biometrics across multiple trusted dev
 # Please note
 CORMORANT is currently under development and far from being mature. APIs are thus subject to change and not yet considered stable. In case you wan't to work with or contribute to this project, make sure to contact one of the contributors.  
 
-## DISCLAIMER
+# API
+
+You can easily create authentication and risk plugins for cormorant using the API provided. The following gradle snippet illustrates how to add the cormorant dependency to your android project.
+
+```gradle
+repositories {  
+   jcenter()  
+}
+
+dependencies {
+  compile 'at.usmile.cormorant:cormorant-api:0.0.1'
+}
+```
+
+# Disclaimer
 
 You are using this application at your own risk. *We are not responsible for any damage caused by this application, incorrect usage or inaccuracies in this manual.*
 
-## LITERATURE
-[1] D. Hintze, R. Findling, M. Muaaz, E.Koch, R. Mayrhofer: *[CORMORANT: Towards Continuous Risk-Aware Multi-Modal Cross-Device Authentication](http://dl.acm.org/authorize?N08572)*, UbiComp/ISWC'15 Adjunct, Adjunct Proceedings of the 2015 ACM International Joint Conference on Pervasive and Ubiquitous Computing and Proceedings of the 2015 ACM International Symposium on Wearable Computers, 2015, September 13-17, Osaka, Japan, Pages 169-172 
+# Presentations
 
-[2] D. Hintze, M. Muaaz, R. Findling, S. Scholz, E.Koch, R. Mayrhofer: *[Confidence and Risk Estimation Plugins for Multi-Modal Authentication on Mobile Devices using CORMORANT](http://dl.acm.org/citation.cfm?id=2843845)*, Proceedings of the 13th International Conference on Advances in Mobile Computing & Multimedia (MoMM 2015), December 11-13, Brussels, Belgium, Pages 384-388 
+[![Continuous risk-aware multi-modal authentication](https://img.youtube.com/vi/c9uYvoSfy38/0.jpg)](https://www.youtube.com/watch?v=c9uYvoSfy38)
+
+# Literature
+[1] D. Hintze, R. Findling, M. Muaaz, E.Koch, R. Mayrhofer: *[CORMORANT: Towards Continuous Risk-Aware Multi-Modal Cross-Device Authentication](http://dl.acm.org/authorize?N08572)*, UbiComp/ISWC'15 Adjunct, Adjunct Proceedings of the 2015 ACM International Joint Conference on Pervasive and Ubiquitous Computing and Proceedings of the 2015 ACM International Symposium on Wearable Computers, 2015, September 13-17, Osaka, Japan, Pages 169-172
+
+[2] D. Hintze, M. Muaaz, R. Findling, S. Scholz, E.Koch, R. Mayrhofer: *[Confidence and Risk Estimation Plugins for Multi-Modal Authentication on Mobile Devices using CORMORANT](http://dl.acm.org/citation.cfm?id=2843845)*, Proceedings of the 13th International Conference on Advances in Mobile Computing & Multimedia (MoMM 2015), December 11-13, Brussels, Belgium, Pages 384-388
