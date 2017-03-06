@@ -40,15 +40,14 @@ import at.usmile.cormorant.framework.ui.PluginDetailFragment;
 import at.usmile.cormorant.framework.ui.PluginListFragment;
 
 public class MainActivity extends AppCompatActivity implements PluginListFragment.PluginListFragmentCallbacks, PluginDetailFragment.PluginDetailFragmentCallbacks {
-    final static String LOG_TAG = MainActivity.class.getSimpleName();
+    private final static String LOG_TAG = MainActivity.class.getSimpleName();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Intent intent = new Intent(this, AuthenticationFrameworkService.class);
-        startService(intent);
+        startService(new Intent(this, AuthenticationFrameworkService.class));
         showMainFragment();
     }
 
@@ -122,6 +121,12 @@ public class MainActivity extends AppCompatActivity implements PluginListFragmen
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
+            case R.id.menuTrustedDevices:
+                startActivity(new Intent(this, GroupListActivity.class));
+                return true;
+            case R.id.menuAddDeviceToGroup:
+                startActivity(new Intent(this, BarcodeActivity.class));
+                return true;
             case R.id.menuRemovePlugins:
                 removeAllPlugins();
                 return true;

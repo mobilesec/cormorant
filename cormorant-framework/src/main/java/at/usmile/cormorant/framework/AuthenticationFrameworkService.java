@@ -70,7 +70,7 @@ import at.usmile.cormorant.framework.plugin.PluginManager;
  * -> startupService (SimpleName of the plugin service)
  */
 public class AuthenticationFrameworkService extends Service {
-    final static String LOG_TAG = AuthenticationFrameworkService.class.getSimpleName();
+    private final static String LOG_TAG = AuthenticationFrameworkService.class.getSimpleName();
 
     private PluginManager pluginManager = PluginManager.getInstance();
     private DecisionModule decisionModule;
@@ -147,7 +147,9 @@ public class AuthenticationFrameworkService extends Service {
         reconnectAllPlugins();
         initDecisionModule();
 
-        bindService(new Intent(this, MessagingService.class), mConnection, Context.BIND_AUTO_CREATE);
+        Intent messagingServiceIntent = new Intent(this, MessagingService.class);
+        startService(messagingServiceIntent);
+        bindService(messagingServiceIntent, mConnection, Context.BIND_AUTO_CREATE);
     }
 
     @Override

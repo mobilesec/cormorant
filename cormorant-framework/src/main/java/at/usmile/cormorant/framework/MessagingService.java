@@ -182,6 +182,10 @@ public class MessagingService extends Service implements IncomingChatMessageList
         Log.d(LOG_TAG, "MessagingService stopped");
     }
 
+    public String getDeviceID() {
+        return user + "@" + host;
+    }
+
     @Override
     public IBinder onBind(Intent intent) {
         return mBinder;

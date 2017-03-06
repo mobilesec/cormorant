@@ -2,4 +2,7 @@
     <string name="app_name">Authentication Framework</string>
     <string name="menu_remove_plugins_title">Remove all Plugins</string>
     <string name="menu_remove_framework_title">Remove Framework</string>
+    <string name="menu_add_device_to_group">Add trusted device</string>
+
+    <string name="device_id">Device Id</string>
 </resources>
