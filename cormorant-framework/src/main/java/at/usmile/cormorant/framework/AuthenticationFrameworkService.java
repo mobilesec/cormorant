@@ -1,15 +1,15 @@
 /**
  * Copyright 2016 - Daniel Hintze <daniel.hintze@fhdw.de>
- * 				 Sebastian Scholz <sebastian.scholz@fhdw.de>
- * 				 Rainhard D. Findling <rainhard.findling@fh-hagenberg.at>
- * 				 Muhammad Muaaz <muhammad.muaaz@usmile.at>
- *
+ * Sebastian Scholz <sebastian.scholz@fhdw.de>
+ * Rainhard D. Findling <rainhard.findling@fh-hagenberg.at>
+ * Muhammad Muaaz <muhammad.muaaz@usmile.at>
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,7 +20,9 @@ package at.usmile.cormorant.framework;
 
 import android.app.Service;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
@@ -70,8 +72,12 @@ import at.usmile.cormorant.framework.plugin.PluginManager;
 public class AuthenticationFrameworkService extends Service {
     final static String LOG_TAG = AuthenticationFrameworkService.class.getSimpleName();
 
-    PluginManager pluginManager = PluginManager.getInstance();
-    DecisionModule decisionModule;
+    private PluginManager pluginManager = PluginManager.getInstance();
+    private DecisionModule decisionModule;
+
+    private MessagingService messagingService;
+    private boolean messagingServiceBound = false;
+
 
     class PluginMessageHandler extends Handler {
         @Override
@@ -124,7 +130,7 @@ public class AuthenticationFrameworkService extends Service {
 
     final Messenger messenger = new Messenger(new PluginMessageHandler());
 
-    private void initDecisionModule(){
+    private void initDecisionModule() {
         //Choose module strategies
         decisionModule = new DecisionModule(
                 this,
@@ -140,12 +146,16 @@ public class AuthenticationFrameworkService extends Service {
         Log.d(LOG_TAG, "AuthenticationFrameworkService started");
         reconnectAllPlugins();
         initDecisionModule();
+
+        bindService(new Intent(this, MessagingService.class), mConnection, Context.BIND_AUTO_CREATE);
     }
 
     @Override
     public void onDestroy() {
         Log.d(LOG_TAG, "AuthenticationFrameworkService stopped");
         decisionModule.stop();
+
+        unbindService(mConnection);
     }
 
     @Override
@@ -176,7 +186,7 @@ public class AuthenticationFrameworkService extends Service {
     }
 
     private ComponentName createComponentName(ComponentName mainComponent, String className) {
-        if(className == null || className == "") return null;
+        if (className == null || className == "") return null;
         return new ComponentName(mainComponent.getPackageName(), mainComponent.getPackageName() + "." + className);
     }
 
@@ -201,4 +211,20 @@ public class AuthenticationFrameworkService extends Service {
             }
         }.execute();
     }
+
+    /** Defines callbacks for service binding, passed to bindService() */
+    private ServiceConnection mConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName className, IBinder service) {
+            MessagingService.MessagingServiceBinder binder = (MessagingService.MessagingServiceBinder) service;
+            messagingService = binder.getService();
+            messagingServiceBound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName arg0) {
+            messagingServiceBound = false;
+        }
+    };
 }
