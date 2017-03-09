@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:resauto="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/group_menu_add_trusted_device"
+        android:icon="@drawable/ic_devices_other_white_24dp"
+        android:title="Add Trusted Devices"
+        resauto:showAsAction="ifRoom" />
+</menu>
