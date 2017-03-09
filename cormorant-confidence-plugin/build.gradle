@@ -18,6 +18,11 @@ android {
     }
     productFlavors {
     }
+    signingConfigs {
+        debug {
+            storeFile file('../debug.keystore')
+        }
+    }
 }
 
 dependencies {
@@ -26,4 +31,3 @@ dependencies {
     compile 'com.android.support:appcompat-v7:23.1.1'
     compile project(':cormorant-api')
 }
-
