@@ -42,6 +42,7 @@ import at.usmile.cormorant.api.CormorantConstants;
 import at.usmile.cormorant.api.Utils;
 import at.usmile.cormorant.api.model.StatusDataConfidence;
 import at.usmile.cormorant.api.model.StatusDataRisk;
+import at.usmile.cormorant.framework.lock.LockService;
 import at.usmile.cormorant.framework.module.DecisionModule;
 import at.usmile.cormorant.framework.module.strategies.DecisionStrategyDefault;
 import at.usmile.cormorant.framework.module.strategies.FusionStrategyConfidenceDefault;
@@ -78,6 +79,7 @@ public class AuthenticationFrameworkService extends Service {
     private DecisionModule decisionModule;
 
     private MessagingService messagingService;
+    private LockService lockService;
     private boolean messagingServiceBound = false;
 
 
@@ -151,7 +153,11 @@ public class AuthenticationFrameworkService extends Service {
 
         Intent messagingServiceIntent = new Intent(this, MessagingService.class);
         startService(messagingServiceIntent);
-        bindService(messagingServiceIntent, mConnection, Context.BIND_AUTO_CREATE);
+        bindService(messagingServiceIntent, messagingServiceConnection, Context.BIND_AUTO_CREATE);
+
+        Intent lockServiceIntent = new Intent(this, LockService.class);
+        startService(lockServiceIntent);
+        bindService(lockServiceIntent, lockServiceConnection, Context.BIND_AUTO_CREATE);
     }
 
     @Override
@@ -159,7 +165,7 @@ public class AuthenticationFrameworkService extends Service {
         Log.d(LOG_TAG, "AuthenticationFrameworkService stopped");
         decisionModule.stop();
 
-        unbindService(mConnection);
+        unbindService(messagingServiceConnection);
     }
 
     @Override
@@ -216,8 +222,7 @@ public class AuthenticationFrameworkService extends Service {
         }.execute();
     }
 
-    /** Defines callbacks for service binding, passed to bindService() */
-    private ServiceConnection mConnection = new ServiceConnection() {
+    private ServiceConnection messagingServiceConnection = new ServiceConnection() {
 
         @Override
         public void onServiceConnected(ComponentName className, IBinder service) {
@@ -229,6 +234,19 @@ public class AuthenticationFrameworkService extends Service {
         @Override
         public void onServiceDisconnected(ComponentName arg0) {
             messagingServiceBound = false;
+        }
+    };
+
+    private ServiceConnection lockServiceConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName className, IBinder service) {
+            LockService.LockServiceBinder binder = (LockService.LockServiceBinder) service;
+            lockService = binder.getService();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName arg0) {
         }
     };
 }
