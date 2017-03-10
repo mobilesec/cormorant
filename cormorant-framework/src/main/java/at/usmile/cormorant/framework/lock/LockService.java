@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
+import android.util.Log;
 
 import at.usmile.cormorant.framework.MainActivity;
 
@@ -36,10 +37,14 @@ public class LockService extends Service {
     // Reenable the keyguard. The keyguard will reappear if the previous call to disableKeyguard() caused it to be hidden.
     // Note: This call has no effect while any DevicePolicyManager is enabled that requires a password.
     public void lock() {
+        Log.d(LOG_TAG, "locking");
+
         keyguardLock.reenableKeyguard();
     }
 
     public void unlock() {
+        Log.d(LOG_TAG, "unlocking");
+
         keyguardLock.disableKeyguard();
     }
 

@@ -29,7 +29,10 @@
             android:name=".MessagingService"
             android:enabled="true"
             android:exported="false" />
-
+        <service
+            android:name=".lock.LockService"
+            android:enabled="true"
+            android:exported="false" />
         <receiver
             android:name=".plugin.PluginPackageChangeReceiver"
             android:enabled="true"
