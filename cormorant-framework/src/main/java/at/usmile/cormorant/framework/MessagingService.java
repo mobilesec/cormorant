@@ -1,17 +1,17 @@
 /**
  * Copyright 2016 - 2017
- *
+ * <p>
  * Daniel Hintze <daniel.hintze@fhdw.de>
  * Sebastian Scholz <sebastian.scholz@fhdw.de>
  * Rainhard D. Findling <rainhard.findling@fh-hagenberg.at>
  * Muhammad Muaaz <muhammad.muaaz@usmile.at>
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,8 +21,10 @@
 package at.usmile.cormorant.framework;
 
 import android.app.Service;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Binder;
@@ -51,6 +53,8 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
+import at.usmile.cormorant.framework.lock.LockService;
+
 public class MessagingService extends Service implements IncomingChatMessageListener {
 
     private final static String LOG_TAG = MessagingService.class.getSimpleName();
@@ -63,6 +67,8 @@ public class MessagingService extends Service implements IncomingChatMessageList
 
     private SharedPreferences prefs;
     private AbstractXMPPConnection connection;
+
+    private LockService lockService;
 
     private String host = "0nl1ne.cc";
     private String user;
@@ -77,12 +83,22 @@ public class MessagingService extends Service implements IncomingChatMessageList
 
         prefs = getSharedPreferences(PREFERENCE_NAME, Context.MODE_PRIVATE);
 
+        Intent lockServiceIntent = new Intent(this, LockService.class);
+        startService(lockServiceIntent);
+        bindService(lockServiceIntent, lockServiceConnection, Context.BIND_AUTO_CREATE);
+
         new ConnectTask().execute();
     }
 
     @Override
     public void newIncomingMessage(EntityBareJid from, Message message, Chat chat) {
         Log.d(LOG_TAG, "New message from " + from + ": " + message.getBody());
+
+        if (message.getBody().equals("lock")) {
+            lockService.lock();
+        } else if (message.getBody().equals("unlock")) {
+            lockService.unlock();
+        }
     }
 
     private void loadAccount() {
@@ -199,4 +215,17 @@ public class MessagingService extends Service implements IncomingChatMessageList
             return MessagingService.this;
         }
     }
+
+    private ServiceConnection lockServiceConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName className, IBinder service) {
+            LockService.LockServiceBinder binder = (LockService.LockServiceBinder) service;
+            lockService = binder.getService();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName arg0) {
+        }
+    };
 }
