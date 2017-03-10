@@ -1,13 +1,13 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 23
-    buildToolsVersion "25.0.1"
-    
+    compileSdkVersion global_compileSdkVersion
+    buildToolsVersion global_buildToolsVersion
+
     defaultConfig {
+        minSdkVersion global_minSdkVersion
+        targetSdkVersion global_targetSdkVersion
         applicationId 'at.usmile.cormorant.confidenceplugin'
-        minSdkVersion 16
-        targetSdkVersion 23
         versionCode 1
         versionName "1.0"
     }

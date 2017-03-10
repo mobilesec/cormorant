@@ -38,3 +38,10 @@ allprojects {
     }
 
 }
+
+subprojects {
+    ext.global_compileSdkVersion = 25
+    ext.global_minSdkVersion = 21
+    ext.global_targetSdkVersion = 22
+    ext.global_buildToolsVersion = "25.0.1"
+}
