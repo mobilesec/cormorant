@@ -126,7 +126,7 @@ public class MessagingService extends Service implements IncomingChatMessageList
                 ChatManager chatManager = ChatManager.getInstanceFor(connection);
                 chatManager.addIncomingListener(MessagingService.this);
 
-                EntityBareJid debugJid = JidCreate.entityBareFrom("cormorant-debug2@0nl1ne.cc");
+                EntityBareJid debugJid = JidCreate.entityBareFrom("cormorant-debug@0nl1ne.cc");
                 Chat chat = chatManager.chatWith(debugJid);
                 chat.send("Howdy!");
             } catch (Exception e) {
