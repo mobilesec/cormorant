@@ -44,4 +44,5 @@ subprojects {
     ext.global_minSdkVersion = 21
     ext.global_targetSdkVersion = 22
     ext.global_buildToolsVersion = "25.0.1"
+    ext.global_appCompatVersion = "23.4.0"
 }
