@@ -1,7 +1,6 @@
 [![travis status](https://travis-ci.org/mobilesec/cormorant.svg?branch=master)](https://travis-ci.org/mobilesec/cormorant)
 [![GitHub release](https://img.shields.io/github/release/mobilesec/cormorant.svg?maxAge=2592000)]()
 [![GitHub tag](https://img.shields.io/github/tag/mobilesec/cormorant.svg?maxAge=2592000)]()
-[![License](https://img.shields.io/:license-Apache 2.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 
 # Cormorant
 CORMORANT is an extensible, risk-aware, multi-modal, crossdevice authentication framework that enables transparent
