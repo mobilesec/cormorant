@@ -18,31 +18,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package at.usmile.cormorant.framework;
+package at.usmile.cormorant.framework.messaging;
 
-public class TrustedDevice {
+public abstract class CormorantMessage {
+    private TYPE type;
+    private CLASS clazz;
 
-    private String id;
-
-    private String device;
-
-    private double screenSize;
-
-    public TrustedDevice(String id, String device, double screenSize) {
-        this.id = id;
-        this.device = device;
-        this.screenSize = screenSize;
+    public CormorantMessage(TYPE type, CLASS clazz) {
+        this.type = type;
+        this.clazz = clazz;
     }
 
-    public String getDevice() {
-        return device;
+    public TYPE getType() {
+        return type;
     }
 
-    public String getId() {
-        return id;
+    public CLASS getClazz() {
+        return clazz;
     }
 
-    public double getScreenSize() {
-        return screenSize;
+    public enum TYPE {
+        GROUP
+    }
+
+    public enum CLASS {
+        GROUP_CHALLENGE_REQUEST, GROUP_CHALLENGE_RESPONSE
+    }
+
+    @Override
+    public String toString() {
+        return "CormorantMessage{" +
+                "type=" + type +
+                ", clazz=" + clazz +
+                '}';
     }
 }

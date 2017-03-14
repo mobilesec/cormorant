@@ -30,12 +30,16 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.View;
 import android.widget.ImageView;
 
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
+
+import at.usmile.cormorant.framework.group.GroupService;
+import at.usmile.cormorant.framework.messaging.MessagingService;
 
 
 public class BarcodeActivity extends AppCompatActivity {
@@ -47,6 +51,9 @@ public class BarcodeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_barcode);
+
+        Intent intent = new Intent(this, GroupService.class);
+        bindService(intent, groupServiceConnection, Context.BIND_AUTO_CREATE);
 
         Intent messagingServiceIntent = new Intent(this, MessagingService.class);
         startService(messagingServiceIntent);
@@ -86,4 +93,26 @@ public class BarcodeActivity extends AppCompatActivity {
         }
     }
 
+    public void addDevice(View view) {
+        //TODO use QR Scanner
+        groupService.sendChallengeRequest("cormorant-9b0c5972-1cb0-4e8f-9afc-8177dec3b065@0nl1ne.cc");
+    }
+
+    private GroupService groupService;
+    private boolean groupServiceBound = false;
+
+    private ServiceConnection groupServiceConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName className, IBinder service) {
+            GroupService.GroupServiceBinder binder = (GroupService.GroupServiceBinder) service;
+            groupService = binder.getService();
+            groupServiceBound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName componentName) {
+            groupServiceBound = false;
+        }
+    };
 }

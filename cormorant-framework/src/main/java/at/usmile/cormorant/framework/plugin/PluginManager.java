@@ -104,7 +104,7 @@ public class PluginManager {
     }
 
     public void pollDataFromPlugins(){
-        Log.d(LOG_TAG, "Requesting data from plugins");
+        Log.v(LOG_TAG, "Requesting data from plugins");
         for (PluginInfo eachPluginInfo : PluginManager.getInstance().getPluginListReadOnly()) {
             Message msg = Message.obtain(null, CormorantConstants.MSG_POLL_DATA);
             try {

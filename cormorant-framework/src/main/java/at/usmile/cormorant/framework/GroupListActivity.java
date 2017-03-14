@@ -34,6 +34,8 @@ import android.widget.TextView;
 
 import java.util.Arrays;
 
+import at.usmile.cormorant.framework.group.TrustedDevice;
+
 public class GroupListActivity extends ListActivity {
 
     @Override
@@ -48,9 +50,9 @@ public class GroupListActivity extends ListActivity {
                         R.layout.activity_group_list_row,
                         R.id.activity_group_list_text1,
                         Arrays.asList(
-                                new TrustedDevice("A", android.os.Build.DEVICE, 2),
-                                new TrustedDevice(Build.MANUFACTURER, Build.MODEL, 5),
-                                new TrustedDevice(Build.MANUFACTURER, Build.MODEL, 10))) {
+                                new TrustedDevice("A", android.os.Build.DEVICE, 2, ""),
+                                new TrustedDevice(Build.MANUFACTURER, Build.MODEL, 5, ""),
+                                new TrustedDevice(Build.MANUFACTURER, Build.MODEL, 10, ""))) {
 
 
                     @Override

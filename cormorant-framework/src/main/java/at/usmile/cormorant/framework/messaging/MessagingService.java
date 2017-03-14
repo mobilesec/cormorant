@@ -18,7 +18,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package at.usmile.cormorant.framework;
+package at.usmile.cormorant.framework.messaging;
 
 import android.app.Service;
 import android.content.ComponentName;
@@ -31,8 +31,12 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 import org.jivesoftware.smack.AbstractXMPPConnection;
 import org.jivesoftware.smack.ConnectionConfiguration;
+import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.chat2.Chat;
 import org.jivesoftware.smack.chat2.ChatManager;
 import org.jivesoftware.smack.chat2.IncomingChatMessageListener;
@@ -43,36 +47,47 @@ import org.jivesoftware.smackx.iqregister.AccountManager;
 import org.jxmpp.jid.EntityBareJid;
 import org.jxmpp.jid.impl.JidCreate;
 import org.jxmpp.jid.parts.Localpart;
+import org.jxmpp.stringprep.XmppStringprepException;
 
 import java.math.BigInteger;
 import java.security.KeyStore;
 import java.security.SecureRandom;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
+import at.usmile.cormorant.framework.group.GroupChallengeRequest;
+import at.usmile.cormorant.framework.group.GroupChallengeResponse;
 import at.usmile.cormorant.framework.lock.LockService;
 
 public class MessagingService extends Service implements IncomingChatMessageListener {
 
     private final static String LOG_TAG = MessagingService.class.getSimpleName();
+    private final static String MESSAGE_SPLIT_CHAR = "!";
 
     private static final String PREFERENCE_NAME = "cormorant";
     private static final String PREF_XMPP_USER = "xmppUser";
     private static final String PREF_XMPP_PASSWORD = "xmppPassword";
 
     private final IBinder mBinder = new MessagingServiceBinder();
+    private final Gson gson = new GsonBuilder().create();
+
+    private LockService lockService;
 
     private SharedPreferences prefs;
     private AbstractXMPPConnection connection;
 
-    private LockService lockService;
-
     private String host = "0nl1ne.cc";
     private String user;
     private String password;
+
+    private Map<CormorantMessage.TYPE, List<CormorantMessageConsumer>> messageListener = new HashMap<>();
 
     public MessagingService() {
     }
@@ -90,15 +105,90 @@ public class MessagingService extends Service implements IncomingChatMessageList
         new ConnectTask().execute();
     }
 
+    private String createMessage(CormorantMessage cormorantMessage){
+        String message = cormorantMessage.getClazz() + MESSAGE_SPLIT_CHAR;
+        message += gson.toJson(cormorantMessage);
+        Log.d(LOG_TAG, "Created message: " + message);
+        return message;
+    }
+
+    private CormorantMessage parseMessage(String message){
+        String[] parts = message.split(MESSAGE_SPLIT_CHAR);
+        if(CormorantMessage.CLASS.GROUP_CHALLENGE_REQUEST.toString().equals(parts[0])){
+            return gson.fromJson(parts[1], GroupChallengeRequest.class);
+        }
+        else if(CormorantMessage.CLASS.GROUP_CHALLENGE_RESPONSE.toString().equals(parts[0])){
+            return gson.fromJson(parts[1], GroupChallengeResponse.class);
+        }
+        else {
+            Log.w(LOG_TAG, "ClassType unknown" + parts[0]);
+            return null;
+        }
+    }
+
     @Override
     public void newIncomingMessage(EntityBareJid from, Message message, Chat chat) {
         Log.d(LOG_TAG, "New message from " + from + ": " + message.getBody());
 
         if (message.getBody().equals("lock")) {
             lockService.lock();
+            return;
         } else if (message.getBody().equals("unlock")) {
             lockService.unlock();
+            return;
         }
+
+        //TODO Is everything a CormorantMessage or only certain messages?
+        final CormorantMessage cormorantMessage = parseMessage(message.getBody());
+        if(cormorantMessage == null) return;
+        List<CormorantMessageConsumer> messageConsumers = messageListener.get(cormorantMessage.getType());
+        if(messageConsumers != null) {
+            for(CormorantMessageConsumer eachConsumer : messageConsumers){
+                eachConsumer.handleMessage(cormorantMessage, chat);
+            }
+        }
+    }
+
+    public void sendMessage(String jabberId, CormorantMessage cormorantMessage){
+        try {
+            ChatManager chatManager = ChatManager.getInstanceFor(connection);
+            chatManager.addIncomingListener(MessagingService.this);
+
+            EntityBareJid receiver = JidCreate.entityBareFrom(jabberId);
+            Chat chat = chatManager.chatWith(receiver);
+            chat.send(createMessage(cormorantMessage));
+        } catch (SmackException.NotConnectedException  | XmppStringprepException | InterruptedException e) {
+            //TODO handle exception
+            Log.e(LOG_TAG, e.getMessage(), e);
+        }
+    }
+
+    public void sendMessage(Chat chat, CormorantMessage cormorantMessage){
+        try {
+            chat.send(createMessage(cormorantMessage));
+        } catch (SmackException.NotConnectedException | InterruptedException e) {
+            //TODO handle exception
+            Log.e(LOG_TAG, e.getMessage(), e);
+        }
+    }
+
+    public void addMessageListener(CormorantMessage.TYPE messageType, CormorantMessageConsumer messageConsumer){
+        List<CormorantMessageConsumer> messageConsumers = messageListener.get(messageType);
+        if(messageConsumers == null) {
+            messageConsumers = new LinkedList<>();
+            messageListener.put(messageType, messageConsumers);
+        }
+        messageConsumers.add(messageConsumer);
+        Log.d(LOG_TAG, "New MessageConsumer added: " + messageConsumer);
+    }
+
+    public void removeMessageListener(CormorantMessage.TYPE messageType, CormorantMessageConsumer messageConsumer){
+        List<CormorantMessageConsumer> messageConsumers = messageListener.get(messageType);
+        if(messageConsumers != null) {
+            messageConsumers.remove(messageConsumer);
+            Log.d(LOG_TAG, "Removed MessageConsumer: " + messageConsumer);
+        }
+        else Log.w(LOG_TAG, "MessageConsumer not found");
     }
 
     private void loadAccount() {
@@ -107,7 +197,6 @@ public class MessagingService extends Service implements IncomingChatMessageList
     }
 
     private class ConnectTask extends AsyncTask<Void, Void, Void> {
-
         @Override
         protected Void doInBackground(Void... params) {
             try {
@@ -210,7 +299,7 @@ public class MessagingService extends Service implements IncomingChatMessageList
     }
 
     public class MessagingServiceBinder extends Binder {
-        MessagingService getService() {
+        public MessagingService getService() {
             // Return this instance of LocalService so clients can call public methods
             return MessagingService.this;
         }

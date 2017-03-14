@@ -26,7 +26,7 @@
             android:enabled="true"
             android:exported="true" />
         <service
-            android:name=".MessagingService"
+            android:name=".messaging.MessagingService"
             android:enabled="true"
             android:exported="false" />
         <service
@@ -66,7 +66,12 @@
             android:configChanges="orientation|keyboardHidden|screenSize"
             android:label="@string/device_id"
             android:theme="@style/FullscreenTheme" />
-        <activity android:name=".GroupListActivity"></activity>
+        <activity android:name=".GroupListActivity" />
+
+        <service
+            android:name=".group.GroupService"
+            android:enabled="true"
+            android:exported="true"></service>
     </application>
 
 </manifest>

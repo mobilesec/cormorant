@@ -42,7 +42,9 @@ import at.usmile.cormorant.api.CormorantConstants;
 import at.usmile.cormorant.api.Utils;
 import at.usmile.cormorant.api.model.StatusDataConfidence;
 import at.usmile.cormorant.api.model.StatusDataRisk;
+import at.usmile.cormorant.framework.group.GroupService;
 import at.usmile.cormorant.framework.lock.LockService;
+import at.usmile.cormorant.framework.messaging.MessagingService;
 import at.usmile.cormorant.framework.module.DecisionModule;
 import at.usmile.cormorant.framework.module.strategies.DecisionStrategyDefault;
 import at.usmile.cormorant.framework.module.strategies.FusionStrategyConfidenceDefault;
@@ -154,6 +156,9 @@ public class AuthenticationFrameworkService extends Service {
         Intent messagingServiceIntent = new Intent(this, MessagingService.class);
         startService(messagingServiceIntent);
         bindService(messagingServiceIntent, messagingServiceConnection, Context.BIND_AUTO_CREATE);
+
+        Intent groupServiceIntent = new Intent(this, GroupService.class);
+        startService(groupServiceIntent);
 
         Intent lockServiceIntent = new Intent(this, LockService.class);
         startService(lockServiceIntent);
