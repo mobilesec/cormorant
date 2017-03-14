@@ -42,7 +42,7 @@ allprojects {
 subprojects {
     ext.global_compileSdkVersion = 25
     ext.global_minSdkVersion = 21
-    ext.global_targetSdkVersion = 22
+    ext.global_targetSdkVersion = 25
     ext.global_buildToolsVersion = "25.0.1"
-    ext.global_appCompatVersion = "23.4.0"
+    ext.global_appCompatVersion = "25.2.0"
 }
