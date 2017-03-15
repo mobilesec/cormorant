@@ -28,7 +28,9 @@ import android.content.ServiceConnection;
 import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.WindowManager;
 
 import org.jivesoftware.smack.chat2.Chat;
 
@@ -56,6 +58,23 @@ public class GroupService extends Service implements CormorantMessageConsumer {
     private Map<String, GroupChallenge> challenges = new HashMap<>();
 
     public GroupService() {
+    }
+
+    @Override
+    public void onCreate() {
+        Log.d(LOG_TAG, "GroupService started");
+        Intent intent = new Intent(this, MessagingService.class);
+        bindService(intent, messageServiceConnection, Context.BIND_AUTO_CREATE);
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        messagingService.removeMessageListener(CormorantMessage.TYPE.GROUP, this);
+    }
+
+    public List<TrustedDevice> getGroup() {
+        return group;
     }
 
     @Override
@@ -107,8 +126,7 @@ public class GroupService extends Service implements CormorantMessageConsumer {
         Log.d(LOG_TAG, "Received ChallengeRequest from " + chat.getXmppAddressOfChatPartner());
         messagingService.sendMessage(chat, new GroupChallengeResponse(
                 groupChallengeRequest.getChallengeId(),
-                //TODO Get Display Size
-                new TrustedDevice(Build.MANUFACTURER, Build.MODEL, 5, messagingService.getDeviceID()),
+                new TrustedDevice(Build.MANUFACTURER, Build.MODEL, getScreenSize(), messagingService.getDeviceID()),
                 11111));
         //TODO showUserInput for PIN and use it
     }
@@ -124,7 +142,6 @@ public class GroupService extends Service implements CormorantMessageConsumer {
         group.remove(trustedDevice);
     }
 
-    //TODO add self at startup if list is empty + fix service bind bug in Barcode Activity
     private void addTrustedDevice(TrustedDevice trustedDevice){
         //TODO create new key + sync
         Log.d(LOG_TAG, "Adding new trusted device: " + trustedDevice);
@@ -141,6 +158,22 @@ public class GroupService extends Service implements CormorantMessageConsumer {
         */
     }
 
+    //TODO Find more reliable implementation (navigation bar is not count = wrong results)
+    private double getScreenSize() {
+        DisplayMetrics dm = new DisplayMetrics();
+        ((WindowManager)getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getMetrics(dm);
+
+        int width = dm.widthPixels;
+        int height = dm.heightPixels;
+        double wi = (double) width / (double) dm.xdpi;
+        double hi = (double) height / (double) dm.ydpi;
+        double x = Math.pow(wi, 2);
+        double y = Math.pow(hi, 2);
+        double screenInches = Math.sqrt(x + y);
+
+        return screenInches;
+    }
+
     @Override
     public IBinder onBind(Intent intent) {
         return mBinder;
@@ -150,19 +183,6 @@ public class GroupService extends Service implements CormorantMessageConsumer {
         public GroupService getService() {
             return GroupService.this;
         }
-    }
-
-    @Override
-    public void onCreate() {
-        Log.d(LOG_TAG, "GroupService started");
-        Intent intent = new Intent(this, MessagingService.class);
-        bindService(intent, messageServiceConnection, Context.BIND_AUTO_CREATE);
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        messagingService.removeMessageListener(CormorantMessage.TYPE.GROUP, this);
     }
 
     private MessagingService messagingService;
@@ -176,6 +196,7 @@ public class GroupService extends Service implements CormorantMessageConsumer {
             messagingService = binder.getService();
             messagingServiceBound = true;
             messagingService.addMessageListener(CormorantMessage.TYPE.GROUP, GroupService.this);
+            if(group.isEmpty()) addTrustedDevice(new TrustedDevice(Build.MANUFACTURER, Build.MODEL, getScreenSize(), messagingService.getDeviceID()));
         }
 
         @Override

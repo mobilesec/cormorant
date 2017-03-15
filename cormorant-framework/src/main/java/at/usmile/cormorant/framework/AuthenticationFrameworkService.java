@@ -171,6 +171,7 @@ public class AuthenticationFrameworkService extends Service {
         decisionModule.stop();
 
         unbindService(messagingServiceConnection);
+        unbindService(lockServiceConnection);
     }
 
     @Override

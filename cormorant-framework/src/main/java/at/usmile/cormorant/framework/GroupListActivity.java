@@ -21,8 +21,13 @@
 package at.usmile.cormorant.framework;
 
 import android.app.ListActivity;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.util.DisplayMetrics;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -34,6 +39,7 @@ import android.widget.TextView;
 
 import java.util.Arrays;
 
+import at.usmile.cormorant.framework.group.GroupService;
 import at.usmile.cormorant.framework.group.TrustedDevice;
 
 public class GroupListActivity extends ListActivity {
@@ -42,18 +48,32 @@ public class GroupListActivity extends ListActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        setContentView(R.layout.activity_group_list);
+        Intent intent = new Intent(this, GroupService.class);
+        bindService(intent, groupServiceConnection, Context.BIND_AUTO_CREATE);
 
+        setContentView(R.layout.activity_group_list);
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (groupServiceBound) unbindService(groupServiceConnection);
+        super.onDestroy();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.group_menu, menu);
+        return true;
+    }
+
+    private void createArrayAdapter(){
         ArrayAdapter<TrustedDevice> adapter =
                 new ArrayAdapter<TrustedDevice>(
                         this,
                         R.layout.activity_group_list_row,
                         R.id.activity_group_list_text1,
-                        Arrays.asList(
-                                new TrustedDevice("A", android.os.Build.DEVICE, 2, ""),
-                                new TrustedDevice(Build.MANUFACTURER, Build.MODEL, 5, ""),
-                                new TrustedDevice(Build.MANUFACTURER, Build.MODEL, 10, ""))) {
-
+                        groupService.getGroup()) {
 
                     @Override
                     public View getView(int position, View contentView, ViewGroup viewGroup) {
@@ -72,17 +92,8 @@ public class GroupListActivity extends ListActivity {
                     }
 
                 };
-
-
         // Bind to our new adapter.
         setListAdapter(adapter);
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.group_menu, menu);
-        return true;
     }
 
     private int getIconByScreenSize(double screenSize) {
@@ -95,18 +106,22 @@ public class GroupListActivity extends ListActivity {
         }
     }
 
-    private double getScreenSize() {
-        DisplayMetrics dm = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(dm);
+    private GroupService groupService;
+    private boolean groupServiceBound = false;
 
-        int width = dm.widthPixels;
-        int height = dm.heightPixels;
-        double wi = (double) width / (double) dm.xdpi;
-        double hi = (double) height / (double) dm.ydpi;
-        double x = Math.pow(wi, 2);
-        double y = Math.pow(hi, 2);
-        double screenInches = Math.sqrt(x + y);
+    private ServiceConnection groupServiceConnection = new ServiceConnection() {
 
-        return screenInches;
-    }
+        @Override
+        public void onServiceConnected(ComponentName className, IBinder service) {
+            GroupService.GroupServiceBinder binder = (GroupService.GroupServiceBinder) service;
+            groupService = binder.getService();
+            groupServiceBound = true;
+            createArrayAdapter();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName componentName) {
+            groupServiceBound = false;
+        }
+    };
 }
