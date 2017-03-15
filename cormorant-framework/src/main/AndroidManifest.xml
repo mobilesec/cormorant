@@ -34,6 +34,7 @@
             android:name=".lock.LockService"
             android:enabled="true"
             android:exported="false" />
+
         <receiver
             android:name=".plugin.PluginPackageChangeReceiver"
             android:enabled="true"
@@ -72,7 +73,12 @@
         <service
             android:name=".group.GroupService"
             android:enabled="true"
-            android:exported="true"></service>
+            android:exported="true" />
+
+        <activity
+            android:name=".group.DialogPinEnterActivity"
+            android:label="Enter PIN"
+            android:theme="@style/Theme.AppCompat.Dialog"></activity>
     </application>
 
 </manifest>

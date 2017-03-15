@@ -56,6 +56,8 @@ public class GroupService extends Service implements CormorantMessageConsumer {
     private List<TrustedDevice> group = new LinkedList<>();
     //TODO remove failed challenge after timeout
     private Map<String, GroupChallenge> challenges = new HashMap<>();
+    //TODO Find better way to access chat, like manage in messageService
+    private Map<String, Chat> chats = new HashMap<>();
 
     public GroupService() {
     }
@@ -124,11 +126,26 @@ public class GroupService extends Service implements CormorantMessageConsumer {
     //--> DEVICE B
     private void receiveChallengeRequest(GroupChallengeRequest groupChallengeRequest, Chat chat){
         Log.d(LOG_TAG, "Received ChallengeRequest from " + chat.getXmppAddressOfChatPartner());
+        String challengeId = groupChallengeRequest.getChallengeId();
+        chats.put(challengeId, chat);
+
+        Intent intent = new Intent(this, DialogPinEnterActivity.class);
+        intent.putExtra(DialogPinEnterActivity.KEY_CHALLENGE_ID, challengeId);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
+    }
+
+    public void respondToChallengeRequest(String challengeId, int pin){
+        Log.d(LOG_TAG, "Responding to Challenge " + challengeId);
+        Chat chat = chats.get(challengeId);
+        if(chat == null){
+            Log.w(LOG_TAG, "Chat with ChallengeId " + challengeId + " not found");
+            return;
+        }
         messagingService.sendMessage(chat, new GroupChallengeResponse(
-                groupChallengeRequest.getChallengeId(),
-                new TrustedDevice(Build.MANUFACTURER, Build.MODEL, getScreenSize(), messagingService.getDeviceID()),
-                11111));
-        //TODO showUserInput for PIN and use it
+            challengeId,
+            new TrustedDevice(Build.MANUFACTURER, Build.MODEL, getScreenSize(), messagingService.getDeviceID()),
+            pin));
     }
     //<-- DEVICE B
 
@@ -150,12 +167,9 @@ public class GroupService extends Service implements CormorantMessageConsumer {
     }
 
     private int createPin(){
-        return 11111;
-        /* TODO Uncomment after Debugging with fixed pin
-        int pinPrefix = 10 * PIN_LENGTH;
-        int pinRandomBorder = (pinPrefix * 10) - (pinPrefix + 1);
+        int pinPrefix = (int) Math.pow(10, (PIN_LENGTH - 1));
+        int pinRandomBorder = (int) (pinPrefix * 10) - (pinPrefix + 1);
         return random.nextInt(pinRandomBorder) + pinPrefix;
-        */
     }
 
     //TODO Find more reliable implementation (navigation bar is not count = wrong results)
