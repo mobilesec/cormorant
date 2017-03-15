@@ -92,7 +92,7 @@ public class GroupService extends Service implements CormorantMessageConsumer {
     //--> DEVICE A
     //TODO check duplicate
     //Called from Activity
-    public void sendChallengeRequest(String targetJabberId){
+    public int sendChallengeRequest(String targetJabberId){
         int pin = createPin();
         Log.d(LOG_TAG, "Sending ChallengeRequest to " + targetJabberId + " with pin: " + pin);
 
@@ -103,7 +103,7 @@ public class GroupService extends Service implements CormorantMessageConsumer {
         challenges.put(challengeId, groupChallenge);
         GroupChallengeRequest groupChallengeRequest = new GroupChallengeRequest(challengeId, Build.MODEL);
         messagingService.sendMessage(targetJabberId, groupChallengeRequest);
-        //TODO Show Pin on this device
+        return pin;
     }
 
     private void checkChallengeResponse(GroupChallengeResponse groupChallengeResponse, Chat chat){

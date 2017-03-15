@@ -20,6 +20,7 @@
  */
 package at.usmile.cormorant.framework;
 
+import android.app.DialogFragment;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -41,6 +42,7 @@ import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import com.google.zxing.qrcode.QRCodeWriter;
 
+import at.usmile.cormorant.framework.group.DialogPinShow;
 import at.usmile.cormorant.framework.group.GroupService;
 import at.usmile.cormorant.framework.messaging.MessagingService;
 
@@ -106,6 +108,15 @@ public class BarcodeActivity extends AppCompatActivity {
         new IntentIntegrator(this).initiateScan();
     }
 
+    public void showNoticeDialog(int pin) {
+        Bundle bundle = new Bundle();
+        bundle.putInt(DialogPinShow.KEY_PIN, pin);
+        DialogFragment dialog = new DialogPinShow();
+        dialog.setArguments(bundle);
+        dialog.show(getFragmentManager(), "DialogPinShow");
+    }
+
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
@@ -114,9 +125,11 @@ public class BarcodeActivity extends AppCompatActivity {
             if(content == null) {
                 Toast.makeText(this, "QR Scan cancelled", Toast.LENGTH_LONG).show();
                 //FIXME only for debugging Samsung 12.2 to Nexus 7
-                groupService.sendChallengeRequest("cormorant-9b0c5972-1cb0-4e8f-9afc-8177dec3b065@0nl1ne.cc");
+                int pin = groupService.sendChallengeRequest("cormorant-9b0c5972-1cb0-4e8f-9afc-8177dec3b065@0nl1ne.cc");
+                showNoticeDialog(pin);
             } else {
-                groupService.sendChallengeRequest(content);
+                int pin = groupService.sendChallengeRequest(content);
+                showNoticeDialog(pin);
             }
         } else {
             super.onActivityResult(requestCode, resultCode, data);
