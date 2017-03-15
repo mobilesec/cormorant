@@ -152,8 +152,6 @@ public class MessagingService extends Service implements IncomingChatMessageList
     public void sendMessage(String jabberId, CormorantMessage cormorantMessage){
         try {
             ChatManager chatManager = ChatManager.getInstanceFor(connection);
-            chatManager.addIncomingListener(MessagingService.this);
-
             EntityBareJid receiver = JidCreate.entityBareFrom(jabberId);
             Chat chat = chatManager.chatWith(receiver);
             chat.send(createMessage(cormorantMessage));
@@ -196,6 +194,7 @@ public class MessagingService extends Service implements IncomingChatMessageList
         password = prefs.getString(PREF_XMPP_PASSWORD, null);
     }
 
+    //TODO reconnect after connection loss
     private class ConnectTask extends AsyncTask<Void, Void, Void> {
         @Override
         protected Void doInBackground(Void... params) {
@@ -231,9 +230,11 @@ public class MessagingService extends Service implements IncomingChatMessageList
                 ChatManager chatManager = ChatManager.getInstanceFor(connection);
                 chatManager.addIncomingListener(MessagingService.this);
 
+                /* FIXME Just debugging stuff
                 EntityBareJid debugJid = JidCreate.entityBareFrom("cormorant-debug@0nl1ne.cc");
                 Chat chat = chatManager.chatWith(debugJid);
                 chat.send("Howdy!");
+                */
             } catch (Exception e) {
                 Log.e(LOG_TAG, e.getMessage(), e);
             }

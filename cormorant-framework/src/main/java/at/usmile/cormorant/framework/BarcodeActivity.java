@@ -32,10 +32,13 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
+import com.google.zxing.integration.android.IntentIntegrator;
+import com.google.zxing.integration.android.IntentResult;
 import com.google.zxing.qrcode.QRCodeWriter;
 
 import at.usmile.cormorant.framework.group.GroupService;
@@ -56,7 +59,6 @@ public class BarcodeActivity extends AppCompatActivity {
         bindService(intent, groupServiceConnection, Context.BIND_AUTO_CREATE);
 
         Intent messagingServiceIntent = new Intent(this, MessagingService.class);
-        startService(messagingServiceIntent);
         bindService(messagingServiceIntent, new ServiceConnection() {
 
             @Override
@@ -66,12 +68,19 @@ public class BarcodeActivity extends AppCompatActivity {
 
                 ImageView barcodeImageView = (ImageView) findViewById(R.id.barcodeImageView);
                 barcodeImageView.setImageBitmap(encodeAsBitmap(messagingService.getDeviceID()));
+                unbindService(this);
             }
 
             @Override
             public void onServiceDisconnected(ComponentName arg0) {
             }
         }, Context.BIND_AUTO_CREATE);
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (groupServiceBound) unbindService(groupServiceConnection);
+        super.onDestroy();
     }
 
     private Bitmap encodeAsBitmap(String str) {
@@ -94,8 +103,24 @@ public class BarcodeActivity extends AppCompatActivity {
     }
 
     public void addDevice(View view) {
-        //TODO use QR Scanner
-        groupService.sendChallengeRequest("cormorant-9b0c5972-1cb0-4e8f-9afc-8177dec3b065@0nl1ne.cc");
+        new IntentIntegrator(this).initiateScan();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
+        if(result != null) {
+            String content = result.getContents();
+            if(content == null) {
+                Toast.makeText(this, "QR Scan cancelled", Toast.LENGTH_LONG).show();
+                //FIXME only for debugging Samsung 12.2 to Nexus 7
+                groupService.sendChallengeRequest("cormorant-9b0c5972-1cb0-4e8f-9afc-8177dec3b065@0nl1ne.cc");
+            } else {
+                groupService.sendChallengeRequest(content);
+            }
+        } else {
+            super.onActivityResult(requestCode, resultCode, data);
+        }
     }
 
     private GroupService groupService;

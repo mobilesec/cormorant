@@ -124,6 +124,7 @@ public class GroupService extends Service implements CormorantMessageConsumer {
         group.remove(trustedDevice);
     }
 
+    //TODO add self at startup if list is empty + fix service bind bug in Barcode Activity
     private void addTrustedDevice(TrustedDevice trustedDevice){
         //TODO create new key + sync
         Log.d(LOG_TAG, "Adding new trusted device: " + trustedDevice);
