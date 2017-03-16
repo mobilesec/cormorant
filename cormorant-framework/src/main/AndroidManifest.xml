@@ -78,7 +78,13 @@
         <activity
             android:name=".group.DialogPinEnterActivity"
             android:label="Enter PIN"
-            android:theme="@style/Theme.AppCompat.Dialog"></activity>
+            android:theme="@style/Theme.AppCompat.Dialog" />
+
+        <activity
+            android:name=".group.DialogPinShowActivity"
+            android:label="PIN for new device"
+            android:theme="@style/Theme.AppCompat.Dialog" />
+
     </application>
 
 </manifest>

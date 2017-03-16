@@ -20,7 +20,6 @@
  */
 package at.usmile.cormorant.framework;
 
-import android.app.DialogFragment;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -42,7 +41,7 @@ import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import com.google.zxing.qrcode.QRCodeWriter;
 
-import at.usmile.cormorant.framework.group.DialogPinShow;
+import at.usmile.cormorant.framework.group.DialogPinShowActivity;
 import at.usmile.cormorant.framework.group.GroupService;
 import at.usmile.cormorant.framework.messaging.MessagingService;
 
@@ -50,6 +49,22 @@ import at.usmile.cormorant.framework.messaging.MessagingService;
 public class BarcodeActivity extends AppCompatActivity {
 
     private final static String LOG_TAG = BarcodeActivity.class.getSimpleName();
+    private GroupService groupService;
+    private boolean groupServiceBound = false;
+    private ServiceConnection groupServiceConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName className, IBinder service) {
+            GroupService.GroupServiceBinder binder = (GroupService.GroupServiceBinder) service;
+            groupService = binder.getService();
+            groupServiceBound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName componentName) {
+            groupServiceBound = false;
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -108,49 +123,30 @@ public class BarcodeActivity extends AppCompatActivity {
         new IntentIntegrator(this).initiateScan();
     }
 
-    public void showNoticeDialog(int pin) {
-        Bundle bundle = new Bundle();
-        bundle.putInt(DialogPinShow.KEY_PIN, pin);
-        DialogFragment dialog = new DialogPinShow();
-        dialog.setArguments(bundle);
-        dialog.show(getFragmentManager(), "DialogPinShow");
+    public void showPinDialog(int pin, String jabberId) {
+        Intent intent = new Intent(this, DialogPinShowActivity.class);
+        intent.putExtra(DialogPinShowActivity.KEY_PIN, pin);
+        intent.putExtra(DialogPinShowActivity.KEY_JABBER_ID, jabberId);
+        startActivity(intent);
     }
-
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         IntentResult result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
-        if(result != null) {
+        if (result != null) {
             String content = result.getContents();
-            if(content == null) {
+            if (content == null) {
                 Toast.makeText(this, "QR Scan cancelled", Toast.LENGTH_LONG).show();
                 //FIXME only for debugging Samsung 12.2 to Nexus 7
-                int pin = groupService.sendChallengeRequest("cormorant-9b0c5972-1cb0-4e8f-9afc-8177dec3b065@0nl1ne.cc");
-                showNoticeDialog(pin);
+                String nexus7JabberId = "cormorant-9b0c5972-1cb0-4e8f-9afc-8177dec3b065@0nl1ne.cc";
+                int pin = groupService.sendChallengeRequest(nexus7JabberId);
+                showPinDialog(pin, nexus7JabberId);
             } else {
                 int pin = groupService.sendChallengeRequest(content);
-                showNoticeDialog(pin);
+                showPinDialog(pin, content);
             }
         } else {
             super.onActivityResult(requestCode, resultCode, data);
         }
     }
-
-    private GroupService groupService;
-    private boolean groupServiceBound = false;
-
-    private ServiceConnection groupServiceConnection = new ServiceConnection() {
-
-        @Override
-        public void onServiceConnected(ComponentName className, IBinder service) {
-            GroupService.GroupServiceBinder binder = (GroupService.GroupServiceBinder) service;
-            groupService = binder.getService();
-            groupServiceBound = true;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName componentName) {
-            groupServiceBound = false;
-        }
-    };
 }

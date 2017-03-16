@@ -27,10 +27,13 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Binder;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.WindowManager;
+import android.widget.Toast;
 
 import org.jivesoftware.smack.chat2.Chat;
 
@@ -41,6 +44,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
+import at.usmile.cormorant.framework.GroupListActivity;
 import at.usmile.cormorant.framework.messaging.CormorantMessage;
 import at.usmile.cormorant.framework.messaging.CormorantMessageConsumer;
 import at.usmile.cormorant.framework.messaging.MessagingService;
@@ -73,6 +77,7 @@ public class GroupService extends Service implements CormorantMessageConsumer {
     public void onDestroy() {
         super.onDestroy();
         messagingService.removeMessageListener(CormorantMessage.TYPE.GROUP, this);
+        if(messagingServiceBound) unbindService(messageServiceConnection);
     }
 
     public List<TrustedDevice> getGroup() {
@@ -93,7 +98,6 @@ public class GroupService extends Service implements CormorantMessageConsumer {
 
     //--> DEVICE A
     //TODO check duplicate
-    //Called from Activity
     public int sendChallengeRequest(String targetJabberId){
         int pin = createPin();
         Log.d(LOG_TAG, "Sending ChallengeRequest to " + targetJabberId + " with pin: " + pin);
@@ -111,13 +115,18 @@ public class GroupService extends Service implements CormorantMessageConsumer {
     private void checkChallengeResponse(GroupChallengeResponse groupChallengeResponse, Chat chat){
         Log.d(LOG_TAG, "Checking ChallengeResponse from " + chat.getXmppAddressOfChatPartner());
         GroupChallenge groupChallenge = challenges.get(groupChallengeResponse.getChallengeId());
-        //TODO allow multiple retries?
         challenges.remove(groupChallengeResponse.getChallengeId());
         if(groupChallenge.getPin() == groupChallengeResponse.getPin()){
             addTrustedDevice(groupChallengeResponse.getTrustedDevice());
-            //TODO sendFeedback to challenger (group + key) + removePinDialog + successToast
+            sendBroadcast(new Intent(DialogPinShowActivity.COMMAND_CLOSE));
+            showToast("New device " + groupChallengeResponse.getTrustedDevice().getDevice() + " added successfully");
+            Intent intent = new Intent(this, GroupListActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+            //TODO sendFeedback to challenger (group + key) + sync
         }
         else {
+            sendBroadcast(new Intent(DialogPinShowActivity.COMMAND_PIN_FAILED));
             //TODO sendError to challenger
         }
     }
@@ -186,6 +195,18 @@ public class GroupService extends Service implements CormorantMessageConsumer {
         double screenInches = Math.sqrt(x + y);
 
         return screenInches;
+    }
+
+    private void showToast(final String message){
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                Toast.makeText(getApplicationContext(),
+                        message,
+                        Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     @Override
