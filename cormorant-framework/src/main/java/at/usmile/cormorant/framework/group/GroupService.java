@@ -47,21 +47,24 @@ import java.util.UUID;
 import at.usmile.cormorant.framework.GroupListActivity;
 import at.usmile.cormorant.framework.messaging.CormorantMessage;
 import at.usmile.cormorant.framework.messaging.CormorantMessageConsumer;
+import at.usmile.cormorant.framework.messaging.DeviceIdListener;
 import at.usmile.cormorant.framework.messaging.MessagingService;
 
-public class GroupService extends Service implements CormorantMessageConsumer {
+public class GroupService extends Service implements CormorantMessageConsumer, DeviceIdListener {
 
     private final static int PIN_LENGTH = 5;
     private final static String LOG_TAG = GroupService.class.getSimpleName();
     private final IBinder mBinder = new GroupService.GroupServiceBinder();
     private final Random random = new Random();
 
-    //TODO persistence + recover after destroy
+    //TODO persistence + recover after destroy (all fields below)
     private List<TrustedDevice> group = new LinkedList<>();
     //TODO remove failed challenge after timeout
     private Map<String, GroupChallenge> challenges = new HashMap<>();
     //TODO Find better way to access chat, like manage in messageService
     private Map<String, Chat> chats = new HashMap<>();
+
+    private TrustedDevice self;
 
     public GroupService() {
     }
@@ -77,11 +80,16 @@ public class GroupService extends Service implements CormorantMessageConsumer {
     public void onDestroy() {
         super.onDestroy();
         messagingService.removeMessageListener(CormorantMessage.TYPE.GROUP, this);
+        messagingService.removeDeviceIdListener(this);
         if(messagingServiceBound) unbindService(messageServiceConnection);
     }
 
     public List<TrustedDevice> getGroup() {
         return group;
+    }
+
+    public TrustedDevice getSelf() {
+        return self;
     }
 
     @Override
@@ -93,7 +101,16 @@ public class GroupService extends Service implements CormorantMessageConsumer {
         else if (cormorantMessage instanceof GroupChallengeResponse){
             checkChallengeResponse((GroupChallengeResponse) cormorantMessage, chat);
         }
+        else if (cormorantMessage instanceof GroupUpdateMessage){
+            receiveGroupUpdate((GroupUpdateMessage) cormorantMessage);
+        }
         else Log.w(LOG_TAG, "MessageType unknown" + cormorantMessage.getClass());
+    }
+
+    @Override
+    public void setJabberId(String jabberId) {
+        self = new TrustedDevice(Build.MANUFACTURER, Build.MODEL, getScreenSize(), messagingService.getDeviceID());
+        if(group.isEmpty()) addTrustedDevice(self);
     }
 
     //--> DEVICE A
@@ -123,11 +140,9 @@ public class GroupService extends Service implements CormorantMessageConsumer {
             Intent intent = new Intent(this, GroupListActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);
-            //TODO sendFeedback to challenger (group + key) + sync
         }
         else {
             sendBroadcast(new Intent(DialogPinShowActivity.COMMAND_PIN_FAILED));
-            //TODO sendError to challenger
         }
     }
     //<-- DEVICE A
@@ -153,26 +168,38 @@ public class GroupService extends Service implements CormorantMessageConsumer {
         }
         messagingService.sendMessage(chat, new GroupChallengeResponse(
             challengeId,
-            new TrustedDevice(Build.MANUFACTURER, Build.MODEL, getScreenSize(), messagingService.getDeviceID()),
+            self,
             pin));
     }
     //<-- DEVICE B
 
     //TODO Do real synchronisation
-    private void synchronizeGroupInfo(List<TrustedDevice> trustedDevices){
-        this.group = trustedDevices;
+    private void synchronizeGroupInfo(){
+        for(TrustedDevice eachTrustedDevice : group){
+            if(eachTrustedDevice.getJabberId().equals(messagingService.getDeviceID())) continue;
+            messagingService.sendMessage(eachTrustedDevice.getJabberId(), new GroupUpdateMessage(group));
+        }
+    }
+
+    private void receiveGroupUpdate(GroupUpdateMessage groupUpdateMessage){
+        int oldGroupCount = this.group.size();
+        this.group = groupUpdateMessage.getGroup();
+        showToast("Group has been refreshed - 1 device "
+                + ((oldGroupCount - this.group.size() < 0) ?  "added" : "removed"));
     }
 
     private void removeTrustedDevice(TrustedDevice trustedDevice){
-        //TODO create new key + sync
-        group.remove(trustedDevice);
+        //TODO create new key + edit group of removed device
+        this.group.remove(trustedDevice);
+        synchronizeGroupInfo();
     }
 
     private void addTrustedDevice(TrustedDevice trustedDevice){
-        //TODO create new key + sync
+        //TODO create new key
         Log.d(LOG_TAG, "Adding new trusted device: " + trustedDevice);
         group.add(trustedDevice);
         Log.d(LOG_TAG, "Active Group: " + group);
+        synchronizeGroupInfo();
     }
 
     private int createPin(){
@@ -231,7 +258,7 @@ public class GroupService extends Service implements CormorantMessageConsumer {
             messagingService = binder.getService();
             messagingServiceBound = true;
             messagingService.addMessageListener(CormorantMessage.TYPE.GROUP, GroupService.this);
-            if(group.isEmpty()) addTrustedDevice(new TrustedDevice(Build.MANUFACTURER, Build.MODEL, getScreenSize(), messagingService.getDeviceID()));
+            messagingService.addDeviceIdListener(GroupService.this);
         }
 
         @Override

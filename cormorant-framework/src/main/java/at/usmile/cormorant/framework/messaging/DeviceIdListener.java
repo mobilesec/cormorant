@@ -20,36 +20,6 @@
  */
 package at.usmile.cormorant.framework.messaging;
 
-public abstract class CormorantMessage {
-    private TYPE type;
-    private CLASS clazz;
-
-    public CormorantMessage(TYPE type, CLASS clazz) {
-        this.type = type;
-        this.clazz = clazz;
-    }
-
-    public TYPE getType() {
-        return type;
-    }
-
-    public CLASS getClazz() {
-        return clazz;
-    }
-
-    public enum TYPE {
-        GROUP
-    }
-
-    public enum CLASS {
-        GROUP_CHALLENGE_REQUEST, GROUP_CHALLENGE_RESPONSE, GROUP_UPDATE
-    }
-
-    @Override
-    public String toString() {
-        return "CormorantMessage{" +
-                "type=" + type +
-                ", clazz=" + clazz +
-                '}';
-    }
+public interface DeviceIdListener {
+    public void setJabberId(String jabberId);
 }

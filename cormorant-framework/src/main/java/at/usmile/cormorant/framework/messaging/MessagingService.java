@@ -64,6 +64,7 @@ import javax.net.ssl.TrustManagerFactory;
 
 import at.usmile.cormorant.framework.group.GroupChallengeRequest;
 import at.usmile.cormorant.framework.group.GroupChallengeResponse;
+import at.usmile.cormorant.framework.group.GroupUpdateMessage;
 import at.usmile.cormorant.framework.lock.LockService;
 
 public class MessagingService extends Service implements IncomingChatMessageListener {
@@ -87,7 +88,8 @@ public class MessagingService extends Service implements IncomingChatMessageList
     private String user;
     private String password;
 
-    private Map<CormorantMessage.TYPE, List<CormorantMessageConsumer>> messageListener = new HashMap<>();
+    private Map<CormorantMessage.TYPE, List<CormorantMessageConsumer>> messageListeners = new HashMap<>();
+    private List<DeviceIdListener> deviceIdListeners = new LinkedList<>();
 
     public MessagingService() {
     }
@@ -120,6 +122,9 @@ public class MessagingService extends Service implements IncomingChatMessageList
         else if(CormorantMessage.CLASS.GROUP_CHALLENGE_RESPONSE.toString().equals(parts[0])){
             return gson.fromJson(parts[1], GroupChallengeResponse.class);
         }
+        else if(CormorantMessage.CLASS.GROUP_UPDATE.toString().equals(parts[0])){
+            return gson.fromJson(parts[1], GroupUpdateMessage.class);
+        }
         else {
             Log.w(LOG_TAG, "ClassType unknown" + parts[0]);
             return null;
@@ -141,7 +146,7 @@ public class MessagingService extends Service implements IncomingChatMessageList
         //TODO Is everything a CormorantMessage or only certain messages?
         final CormorantMessage cormorantMessage = parseMessage(message.getBody());
         if(cormorantMessage == null) return;
-        List<CormorantMessageConsumer> messageConsumers = messageListener.get(cormorantMessage.getType());
+        List<CormorantMessageConsumer> messageConsumers = messageListeners.get(cormorantMessage.getType());
         if(messageConsumers != null) {
             for(CormorantMessageConsumer eachConsumer : messageConsumers){
                 eachConsumer.handleMessage(cormorantMessage, chat);
@@ -149,6 +154,7 @@ public class MessagingService extends Service implements IncomingChatMessageList
         }
     }
 
+    //TODO save chat for jabberId and reuse if available
     public void sendMessage(String jabberId, CormorantMessage cormorantMessage){
         try {
             ChatManager chatManager = ChatManager.getInstanceFor(connection);
@@ -171,22 +177,36 @@ public class MessagingService extends Service implements IncomingChatMessageList
     }
 
     public void addMessageListener(CormorantMessage.TYPE messageType, CormorantMessageConsumer messageConsumer){
-        List<CormorantMessageConsumer> messageConsumers = messageListener.get(messageType);
+        List<CormorantMessageConsumer> messageConsumers = messageListeners.get(messageType);
         if(messageConsumers == null) {
             messageConsumers = new LinkedList<>();
-            messageListener.put(messageType, messageConsumers);
+            messageListeners.put(messageType, messageConsumers);
         }
         messageConsumers.add(messageConsumer);
         Log.d(LOG_TAG, "New MessageConsumer added: " + messageConsumer);
     }
 
     public void removeMessageListener(CormorantMessage.TYPE messageType, CormorantMessageConsumer messageConsumer){
-        List<CormorantMessageConsumer> messageConsumers = messageListener.get(messageType);
+        List<CormorantMessageConsumer> messageConsumers = messageListeners.get(messageType);
         if(messageConsumers != null) {
             messageConsumers.remove(messageConsumer);
             Log.d(LOG_TAG, "Removed MessageConsumer: " + messageConsumer);
         }
         else Log.w(LOG_TAG, "MessageConsumer not found");
+    }
+
+    private void updateDeviceId(String jabberId){
+        for(DeviceIdListener eachDeviceIdListener : this.deviceIdListeners){
+            eachDeviceIdListener.setJabberId(jabberId);
+        }
+    }
+
+    public void addDeviceIdListener(DeviceIdListener deviceIdListener){
+        this.deviceIdListeners.add(deviceIdListener);
+    }
+
+    public void removeDeviceIdListener(DeviceIdListener deviceIdListener){
+        this.deviceIdListeners.remove(deviceIdListener);
     }
 
     private void loadAccount() {
@@ -222,6 +242,7 @@ public class MessagingService extends Service implements IncomingChatMessageList
                 if (user == null) {
                     createAccount();
                 }
+                updateDeviceId(getDeviceID());
 
                 Log.d(LOG_TAG, "Logging in with user " + user);
                 connection.login(user, password);

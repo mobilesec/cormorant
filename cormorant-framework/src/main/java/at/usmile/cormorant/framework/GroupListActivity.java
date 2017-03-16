@@ -25,10 +25,9 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.os.Build;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.util.DisplayMetrics;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.View;
@@ -36,8 +35,6 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
-
-import java.util.Arrays;
 
 import at.usmile.cormorant.framework.group.GroupService;
 import at.usmile.cormorant.framework.group.TrustedDevice;
@@ -83,6 +80,8 @@ public class GroupListActivity extends ListActivity {
                         }
 
                         TrustedDevice p = getItem(position);
+
+                        if(groupService.getSelf().equals(p)) view.setBackgroundColor(Color.GREEN);
 
                         ((TextView) view.findViewById(R.id.activity_group_list_text1)).setText(p.getId());
                         ((TextView) view.findViewById(R.id.activity_group_list_text2)).setText(p.getDevice());

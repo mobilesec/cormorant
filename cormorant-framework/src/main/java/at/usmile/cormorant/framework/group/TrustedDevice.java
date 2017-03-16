@@ -28,13 +28,13 @@ public class TrustedDevice {
 
     private double screenSize;
 
-    private String jabbaId;
+    private String jabberId;
 
-    public TrustedDevice(String id, String device, double screenSize, String jabbaId) {
+    public TrustedDevice(String id, String device, double screenSize, String jabberId) {
         this.id = id;
         this.device = device;
         this.screenSize = screenSize;
-        this.jabbaId = jabbaId;
+        this.jabberId = jabberId;
     }
 
     public String getDevice() {
@@ -49,8 +49,8 @@ public class TrustedDevice {
         return screenSize;
     }
 
-    public String getJabbaId() {
-        return jabbaId;
+    public String getJabberId() {
+        return jabberId;
     }
 
     @Override
@@ -63,7 +63,7 @@ public class TrustedDevice {
         if (Double.compare(that.screenSize, screenSize) != 0) return false;
         if (!id.equals(that.id)) return false;
         if (!device.equals(that.device)) return false;
-        return jabbaId.equals(that.jabbaId);
+        return jabberId.equals(that.jabberId);
 
     }
 
@@ -75,7 +75,7 @@ public class TrustedDevice {
         result = 31 * result + device.hashCode();
         temp = Double.doubleToLongBits(screenSize);
         result = 31 * result + (int) (temp ^ (temp >>> 32));
-        result = 31 * result + jabbaId.hashCode();
+        result = 31 * result + jabberId.hashCode();
         return result;
     }
 
@@ -85,7 +85,7 @@ public class TrustedDevice {
                 "id='" + id + '\'' +
                 ", device='" + device + '\'' +
                 ", screenSize=" + screenSize +
-                ", jabbaId='" + jabbaId + '\'' +
+                ", jabberId='" + jabberId + '\'' +
                 '}';
     }
 }

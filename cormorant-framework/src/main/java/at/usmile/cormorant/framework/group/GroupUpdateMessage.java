@@ -18,38 +18,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package at.usmile.cormorant.framework.messaging;
+package at.usmile.cormorant.framework.group;
 
-public abstract class CormorantMessage {
-    private TYPE type;
-    private CLASS clazz;
+import java.util.List;
 
-    public CormorantMessage(TYPE type, CLASS clazz) {
-        this.type = type;
-        this.clazz = clazz;
+import at.usmile.cormorant.framework.messaging.CormorantMessage;
+
+public class GroupUpdateMessage extends CormorantMessage {
+    private List<TrustedDevice> group;
+
+    public GroupUpdateMessage(List<TrustedDevice> group) {
+        super(TYPE.GROUP, CLASS.GROUP_UPDATE);
+        this.group = group;
     }
 
-    public TYPE getType() {
-        return type;
-    }
-
-    public CLASS getClazz() {
-        return clazz;
-    }
-
-    public enum TYPE {
-        GROUP
-    }
-
-    public enum CLASS {
-        GROUP_CHALLENGE_REQUEST, GROUP_CHALLENGE_RESPONSE, GROUP_UPDATE
+    public List<TrustedDevice> getGroup() {
+        return group;
     }
 
     @Override
     public String toString() {
-        return "CormorantMessage{" +
-                "type=" + type +
-                ", clazz=" + clazz +
-                '}';
+        return "GroupUpdateMessage{" +
+                "group=" + group +
+                "} " + super.toString();
     }
 }
