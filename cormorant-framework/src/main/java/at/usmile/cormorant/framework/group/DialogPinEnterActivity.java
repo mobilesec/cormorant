@@ -24,25 +24,26 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.view.View;
 import android.widget.EditText;
 
 import at.usmile.cormorant.framework.R;
 
-import static android.R.id.edit;
-
 public class DialogPinEnterActivity extends AppCompatActivity {
     public static final String KEY_CHALLENGE_ID = "challengeId";
+    public static final String KEY_SENDER_JABBER_ID = "senderJabberId";
     private String challengeId;
+    private String senderJabberId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dialog_pin_enter);
         challengeId = getIntent().getStringExtra(KEY_CHALLENGE_ID);
+        senderJabberId = getIntent().getStringExtra(KEY_SENDER_JABBER_ID);
 
         Intent intent = new Intent(this, GroupService.class);
         bindService(intent, groupServiceConnection, Context.BIND_AUTO_CREATE);
@@ -56,7 +57,8 @@ public class DialogPinEnterActivity extends AppCompatActivity {
 
     public void setPin(View view) {
         EditText editPin = (EditText) findViewById(R.id.editPin);
-        groupService.respondToChallengeRequest(challengeId, Integer.parseInt(editPin.getText().toString()));
+        groupService.respondToChallengeRequest(challengeId,
+                Integer.parseInt(editPin.getText().toString()), senderJabberId);
         finish();
     }
 

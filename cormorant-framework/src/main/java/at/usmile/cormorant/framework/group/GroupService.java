@@ -52,18 +52,16 @@ import at.usmile.cormorant.framework.messaging.MessagingService;
 
 public class GroupService extends Service implements CormorantMessageConsumer, DeviceIdListener {
 
-    private final static int PIN_LENGTH = 5;
+    private final static int PIN_LENGTH = 4;
     private final static String LOG_TAG = GroupService.class.getSimpleName();
     private final IBinder mBinder = new GroupService.GroupServiceBinder();
     private final Random random = new Random();
 
     //TODO persistence + recover after destroy (all fields below)
     private List<TrustedDevice> group = new LinkedList<>();
-    //TODO remove failed challenge after timeout
+    //TODO remove challenge after timeout or just do not persist?
+    //<challengeId, GC>
     private Map<String, GroupChallenge> challenges = new HashMap<>();
-    //TODO Find better way to access chat, like manage in messageService
-    private Map<String, Chat> chats = new HashMap<>();
-
     private TrustedDevice self;
 
     public GroupService() {
@@ -124,7 +122,7 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
                 targetJabberId);
         String challengeId = UUID.randomUUID().toString();
         challenges.put(challengeId, groupChallenge);
-        GroupChallengeRequest groupChallengeRequest = new GroupChallengeRequest(challengeId, Build.MODEL);
+        GroupChallengeRequest groupChallengeRequest = new GroupChallengeRequest(challengeId, self.getJabberId());
         messagingService.sendMessage(targetJabberId, groupChallengeRequest);
         return pin;
     }
@@ -150,30 +148,24 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
     //--> DEVICE B
     private void receiveChallengeRequest(GroupChallengeRequest groupChallengeRequest, Chat chat){
         Log.d(LOG_TAG, "Received ChallengeRequest from " + chat.getXmppAddressOfChatPartner());
-        String challengeId = groupChallengeRequest.getChallengeId();
-        chats.put(challengeId, chat);
 
         Intent intent = new Intent(this, DialogPinEnterActivity.class);
-        intent.putExtra(DialogPinEnterActivity.KEY_CHALLENGE_ID, challengeId);
+        intent.putExtra(DialogPinEnterActivity.KEY_CHALLENGE_ID, groupChallengeRequest.getChallengeId());
+        intent.putExtra(DialogPinEnterActivity.KEY_SENDER_JABBER_ID, groupChallengeRequest.getSenderDeviceId());
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
     }
 
-    public void respondToChallengeRequest(String challengeId, int pin){
+    public void respondToChallengeRequest(String challengeId, int pin, String senderJabberId){
         Log.d(LOG_TAG, "Responding to Challenge " + challengeId);
-        Chat chat = chats.get(challengeId);
-        if(chat == null){
-            Log.w(LOG_TAG, "Chat with ChallengeId " + challengeId + " not found");
-            return;
-        }
-        messagingService.sendMessage(chat, new GroupChallengeResponse(
+        messagingService.sendMessage(senderJabberId, new GroupChallengeResponse(
             challengeId,
             self,
             pin));
     }
     //<-- DEVICE B
 
-    //TODO Do real synchronisation
+    //TODO Do real synchronisation + how to handle offline devices during sync?
     private void synchronizeGroupInfo(){
         for(TrustedDevice eachTrustedDevice : group){
             if(eachTrustedDevice.getJabberId().equals(messagingService.getDeviceID())) continue;
@@ -188,6 +180,7 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
                 + ((oldGroupCount - this.group.size() < 0) ?  "added" : "removed"));
     }
 
+    //TODO add function to groupListActivity
     private void removeTrustedDevice(TrustedDevice trustedDevice){
         //TODO create new key + edit group of removed device
         this.group.remove(trustedDevice);
@@ -204,7 +197,7 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
 
     private int createPin(){
         int pinPrefix = (int) Math.pow(10, (PIN_LENGTH - 1));
-        int pinRandomBorder = (int) (pinPrefix * 10) - (pinPrefix + 1);
+        int pinRandomBorder = (pinPrefix * 10) - (pinPrefix + 1);
         return random.nextInt(pinRandomBorder) + pinPrefix;
     }
 
@@ -219,9 +212,7 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
         double hi = (double) height / (double) dm.ydpi;
         double x = Math.pow(wi, 2);
         double y = Math.pow(hi, 2);
-        double screenInches = Math.sqrt(x + y);
-
-        return screenInches;
+        return Math.sqrt(x + y);
     }
 
     private void showToast(final String message){

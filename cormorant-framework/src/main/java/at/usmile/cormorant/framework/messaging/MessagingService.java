@@ -21,10 +21,8 @@
 package at.usmile.cormorant.framework.messaging;
 
 import android.app.Service;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Binder;
@@ -65,7 +63,6 @@ import javax.net.ssl.TrustManagerFactory;
 import at.usmile.cormorant.framework.group.GroupChallengeRequest;
 import at.usmile.cormorant.framework.group.GroupChallengeResponse;
 import at.usmile.cormorant.framework.group.GroupUpdateMessage;
-import at.usmile.cormorant.framework.lock.LockService;
 
 public class MessagingService extends Service implements IncomingChatMessageListener {
 
@@ -78,8 +75,6 @@ public class MessagingService extends Service implements IncomingChatMessageList
 
     private final IBinder mBinder = new MessagingServiceBinder();
     private final Gson gson = new GsonBuilder().create();
-
-    private LockService lockService;
 
     private SharedPreferences prefs;
     private AbstractXMPPConnection connection;
@@ -99,11 +94,6 @@ public class MessagingService extends Service implements IncomingChatMessageList
         Log.d(LOG_TAG, "MessagingService started");
 
         prefs = getSharedPreferences(PREFERENCE_NAME, Context.MODE_PRIVATE);
-
-        Intent lockServiceIntent = new Intent(this, LockService.class);
-        startService(lockServiceIntent);
-        bindService(lockServiceIntent, lockServiceConnection, Context.BIND_AUTO_CREATE);
-
         new ConnectTask().execute();
     }
 
@@ -135,15 +125,6 @@ public class MessagingService extends Service implements IncomingChatMessageList
     public void newIncomingMessage(EntityBareJid from, Message message, Chat chat) {
         Log.d(LOG_TAG, "New message from " + from + ": " + message.getBody());
 
-        if (message.getBody().equals("lock")) {
-            lockService.lock();
-            return;
-        } else if (message.getBody().equals("unlock")) {
-            lockService.unlock();
-            return;
-        }
-
-        //TODO Is everything a CormorantMessage or only certain messages?
         final CormorantMessage cormorantMessage = parseMessage(message.getBody());
         if(cormorantMessage == null) return;
         List<CormorantMessageConsumer> messageConsumers = messageListeners.get(cormorantMessage.getType());
@@ -154,23 +135,13 @@ public class MessagingService extends Service implements IncomingChatMessageList
         }
     }
 
-    //TODO save chat for jabberId and reuse if available
     public void sendMessage(String jabberId, CormorantMessage cormorantMessage){
         try {
             ChatManager chatManager = ChatManager.getInstanceFor(connection);
             EntityBareJid receiver = JidCreate.entityBareFrom(jabberId);
             Chat chat = chatManager.chatWith(receiver);
             chat.send(createMessage(cormorantMessage));
-        } catch (SmackException.NotConnectedException  | XmppStringprepException | InterruptedException e) {
-            //TODO handle exception
-            Log.e(LOG_TAG, e.getMessage(), e);
-        }
-    }
-
-    public void sendMessage(Chat chat, CormorantMessage cormorantMessage){
-        try {
-            chat.send(createMessage(cormorantMessage));
-        } catch (SmackException.NotConnectedException | InterruptedException e) {
+        } catch (XmppStringprepException | SmackException.NotConnectedException | InterruptedException e) {
             //TODO handle exception
             Log.e(LOG_TAG, e.getMessage(), e);
         }
@@ -282,7 +253,7 @@ public class MessagingService extends Service implements IncomingChatMessageList
             editor.putString(PREF_XMPP_USER, userName);
             editor.putString(PREF_XMPP_PASSWORD, password);
 
-            editor.commit();
+            editor.apply();
 
             Log.i(LOG_TAG, "Account creation successful");
 
@@ -326,17 +297,4 @@ public class MessagingService extends Service implements IncomingChatMessageList
             return MessagingService.this;
         }
     }
-
-    private ServiceConnection lockServiceConnection = new ServiceConnection() {
-
-        @Override
-        public void onServiceConnected(ComponentName className, IBinder service) {
-            LockService.LockServiceBinder binder = (LockService.LockServiceBinder) service;
-            lockService = binder.getService();
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName arg0) {
-        }
-    };
 }
