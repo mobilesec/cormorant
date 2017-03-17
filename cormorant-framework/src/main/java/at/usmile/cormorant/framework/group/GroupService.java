@@ -57,6 +57,7 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
     private final IBinder mBinder = new GroupService.GroupServiceBinder();
     private final Random random = new Random();
 
+    private List<GroupChangeListener> groupChangeListeners = new LinkedList<>();
     //TODO persistence + recover after destroy (all fields below)
     private List<TrustedDevice> group = new LinkedList<>();
     //TODO remove challenge after timeout or just do not persist?
@@ -109,6 +110,20 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
     public void setJabberId(String jabberId) {
         self = new TrustedDevice(Build.MANUFACTURER, Build.MODEL, getScreenSize(), messagingService.getDeviceID());
         if(group.isEmpty()) addTrustedDevice(self);
+    }
+
+    public void addGroupChangeListener(GroupChangeListener groupChangeListener){
+        this.groupChangeListeners.add(groupChangeListener);
+    }
+
+    public void removeGroupChangeListener(GroupChangeListener groupChangeListener){
+        this.groupChangeListeners.remove(groupChangeListener);
+    }
+
+    private void notifyGroupChangeListeners(){
+        for(GroupChangeListener eachGroupChangeListener : groupChangeListeners){
+            eachGroupChangeListener.groupChanged();
+        }
     }
 
     //--> DEVICE A
@@ -167,24 +182,54 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
 
     //TODO Do real synchronisation + how to handle offline devices during sync?
     private void synchronizeGroupInfo(){
+        Log.d(LOG_TAG, "Synching new group: " + group);
         for(TrustedDevice eachTrustedDevice : group){
-            if(eachTrustedDevice.getJabberId().equals(messagingService.getDeviceID())) continue;
-            messagingService.sendMessage(eachTrustedDevice.getJabberId(), new GroupUpdateMessage(group));
+            if(eachTrustedDevice.equals(self)) continue;
+            else messagingService.sendMessage(eachTrustedDevice.getJabberId(),
+                new GroupUpdateMessage(group));
         }
     }
 
-    private void receiveGroupUpdate(GroupUpdateMessage groupUpdateMessage){
-        int oldGroupCount = this.group.size();
-        this.group = groupUpdateMessage.getGroup();
-        showToast("Group has been refreshed - 1 device "
-                + ((oldGroupCount - this.group.size() < 0) ?  "added" : "removed"));
+    private void synchronizeGroupInfo(TrustedDevice removedDevice){
+        Log.d(LOG_TAG, "Synching device removal to: " + removedDevice);
+        messagingService.sendMessage(removedDevice.getJabberId(),
+            new GroupUpdateMessage(group));
+        synchronizeGroupInfo();
     }
 
-    //TODO add function to groupListActivity
-    private void removeTrustedDevice(TrustedDevice trustedDevice){
-        //TODO create new key + edit group of removed device
-        this.group.remove(trustedDevice);
-        synchronizeGroupInfo();
+    private void receiveGroupUpdate(GroupUpdateMessage groupUpdateMessage){
+        Log.d(LOG_TAG, "Received GroupUpdateMessage: " + groupUpdateMessage);
+        //device has been removed from group by other device
+        if(!groupUpdateMessage.getGroup().contains(self)){
+            this.group.clear();
+            this.group.add(self);
+            showToast("Device has been removed from authentication group");
+        }
+        else {
+            int oldGroupCount = this.group.size();
+            this.group.clear();
+            this.group.addAll(groupUpdateMessage.getGroup());
+
+            showToast("Group has been refreshed - 1 device "
+                + ((oldGroupCount - this.group.size() < 0) ?  "added" : "removed"));
+        }
+        notifyGroupChangeListeners();
+    }
+
+    public void removeTrustedDevice(TrustedDevice deviceToRemove){
+        Log.d(LOG_TAG, "Removing device: " + deviceToRemove);
+        //TODO create new key
+        if(deviceToRemove.equals(self)){
+            this.group.remove(self);
+            synchronizeGroupInfo();
+            this.group.clear();
+            this.group.add(self);
+        }
+        else {
+            this.group.remove(deviceToRemove);
+            synchronizeGroupInfo(deviceToRemove);
+        }
+        notifyGroupChangeListeners();
     }
 
     private void addTrustedDevice(TrustedDevice trustedDevice){
@@ -193,6 +238,7 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
         group.add(trustedDevice);
         Log.d(LOG_TAG, "Active Group: " + group);
         synchronizeGroupInfo();
+        notifyGroupChangeListeners();
     }
 
     private int createPin(){

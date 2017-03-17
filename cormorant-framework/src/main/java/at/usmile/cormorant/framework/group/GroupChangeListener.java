@@ -20,27 +20,6 @@
  */
 package at.usmile.cormorant.framework.group;
 
-import java.util.List;
-
-import at.usmile.cormorant.framework.messaging.CormorantMessage;
-
-public class GroupUpdateMessage extends CormorantMessage {
-    private List<TrustedDevice> group;
-
-    public GroupUpdateMessage(List<TrustedDevice> group) {
-        super(TYPE.GROUP, CLASS.GROUP_UPDATE);
-        this.group = group;
-    }
-
-    @Override
-    public String toString() {
-        return "GroupUpdateMessage{" +
-                "group=" + group +
-                "} " + super.toString();
-    }
-
-    public List<TrustedDevice> getGroup() {
-        return group;
-    }
-
+public interface GroupChangeListener {
+    public void groupChanged();
 }

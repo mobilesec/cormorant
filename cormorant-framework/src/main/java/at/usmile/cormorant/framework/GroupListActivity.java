@@ -30,16 +30,20 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.view.Menu;
 import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import at.usmile.cormorant.framework.group.DialogRemoveDeviceActivity;
+import at.usmile.cormorant.framework.group.GroupChangeListener;
 import at.usmile.cormorant.framework.group.GroupService;
 import at.usmile.cormorant.framework.group.TrustedDevice;
 
-public class GroupListActivity extends ListActivity {
+public class GroupListActivity extends ListActivity implements GroupChangeListener {
+    public static TrustedDevice deviceToRemove;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,6 +68,29 @@ public class GroupListActivity extends ListActivity {
         return true;
     }
 
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.menuTrustedDevices:
+                startActivity(new Intent(this, GroupListActivity.class));
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+    public void removeDevice(View view) {
+        int position = getListView().getPositionForView(view);
+        deviceToRemove = (TrustedDevice) getListView().getItemAtPosition(position);
+        showRemoveDeviceDialog();
+    }
+
+    public void showRemoveDeviceDialog() {
+        Intent intent = new Intent(this, DialogRemoveDeviceActivity.class);
+        startActivity(intent);
+    }
+
+    //TODO Better icon for device removal
     private void createArrayAdapter(){
         ArrayAdapter<TrustedDevice> adapter =
                 new ArrayAdapter<TrustedDevice>(
@@ -81,18 +108,30 @@ public class GroupListActivity extends ListActivity {
 
                         TrustedDevice p = getItem(position);
 
-                        if(groupService.getSelf().equals(p)) view.setBackgroundColor(Color.GREEN);
 
                         ((TextView) view.findViewById(R.id.activity_group_list_text1)).setText(p.getId());
                         ((TextView) view.findViewById(R.id.activity_group_list_text2)).setText(p.getDevice());
                         ((ImageView) view.findViewById(R.id.activity_group_list_icon)).setImageResource(getIconByScreenSize(p.getScreenSize()));
+                        //FIXME why is explicit setImageResource needed instead of xml defined icon?
+                        ((ImageView) view.findViewById(R.id.activity_group_list_remove_icon)).setImageResource(R.drawable.ic_line_weight_black_24dp);
 
+                        if(groupService.getSelf().equals(p)) view.setBackgroundColor(Color.GREEN);
                         return view;
                     }
 
                 };
         // Bind to our new adapter.
         setListAdapter(adapter);
+    }
+
+    @Override
+    public void groupChanged() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                ((ArrayAdapter)getListAdapter()).notifyDataSetChanged();
+            }
+        });
     }
 
     private int getIconByScreenSize(double screenSize) {
@@ -116,11 +155,13 @@ public class GroupListActivity extends ListActivity {
             groupService = binder.getService();
             groupServiceBound = true;
             createArrayAdapter();
+            groupService.addGroupChangeListener(GroupListActivity.this);
         }
 
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
             groupServiceBound = false;
+            groupService.removeGroupChangeListener(GroupListActivity.this);
         }
     };
 }
