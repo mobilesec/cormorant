@@ -45,6 +45,8 @@ import at.usmile.cormorant.framework.group.DialogPinShowActivity;
 import at.usmile.cormorant.framework.group.GroupService;
 import at.usmile.cormorant.framework.messaging.MessagingService;
 
+import static at.usmile.cormorant.framework.group.GroupService.CHALLENGE_REQUEST_CANCELED;
+
 
 public class BarcodeActivity extends AppCompatActivity {
 
@@ -140,10 +142,10 @@ public class BarcodeActivity extends AppCompatActivity {
                 //FIXME only for developer Nexus 7 debugging
                 String nexus7JabberId = "cormorant-c50b4b30-8ac5-42a0-814e-e22121050288@0nl1ne.cc";
                 int pin = groupService.sendChallengeRequest(nexus7JabberId);
-                showPinDialog(pin, nexus7JabberId);
+                if(pin != CHALLENGE_REQUEST_CANCELED) showPinDialog(pin, nexus7JabberId);
             } else {
                 int pin = groupService.sendChallengeRequest(content);
-                showPinDialog(pin, content);
+                if(pin != CHALLENGE_REQUEST_CANCELED) showPinDialog(pin, content);
             }
         } else {
             super.onActivityResult(requestCode, resultCode, data);

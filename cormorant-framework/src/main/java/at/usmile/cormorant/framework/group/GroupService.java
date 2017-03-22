@@ -55,6 +55,7 @@ import at.usmile.cormorant.framework.messaging.MessagingService;
 
 public class GroupService extends Service implements CormorantMessageConsumer, DeviceIdListener {
 
+    public final static int CHALLENGE_REQUEST_CANCELED = -1;
     private final static int PIN_LENGTH = 4;
     private final static String LOG_TAG = GroupService.class.getSimpleName();
     private final IBinder mBinder = new GroupService.GroupServiceBinder();
@@ -145,8 +146,12 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
     }
 
     //--> DEVICE A
-    //TODO check duplicate
     public int sendChallengeRequest(String targetJabberId){
+        if(isJabberIdAlreadyInGroup(targetJabberId)){
+            Log.d(LOG_TAG, "ChallengeRequest canceled - device is already in group - JabberId: " + targetJabberId);
+            showToast("Device is already in group");
+            return CHALLENGE_REQUEST_CANCELED;
+        }
         int pin = createPin();
         Log.d(LOG_TAG, "Sending ChallengeRequest to " + targetJabberId + " with pin: " + pin);
 
@@ -154,6 +159,13 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
         GroupChallengeRequest groupChallengeRequest = new GroupChallengeRequest(self.getJabberId());
         messagingService.sendMessage(targetJabberId, groupChallengeRequest);
         return pin;
+    }
+
+    private boolean isJabberIdAlreadyInGroup(String jabberId){
+        for(TrustedDevice eachTrustedDevice : this.group){
+            if(eachTrustedDevice.getJabberId().equals(jabberId)) return true;
+        }
+        return false;
     }
 
     private void checkChallengeResponse(GroupChallengeResponse groupChallengeResponse, Chat chat){

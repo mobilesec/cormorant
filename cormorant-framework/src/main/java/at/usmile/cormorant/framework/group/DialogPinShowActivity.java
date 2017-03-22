@@ -35,6 +35,8 @@ import android.widget.TextView;
 
 import at.usmile.cormorant.framework.R;
 
+import static at.usmile.cormorant.framework.group.GroupService.CHALLENGE_REQUEST_CANCELED;
+
 public class DialogPinShowActivity extends AppCompatActivity {
     private final static String LOG_TAG = DialogPinShowActivity.class.getSimpleName();
 
@@ -93,8 +95,10 @@ public class DialogPinShowActivity extends AppCompatActivity {
     };
 
     public void retryPin(View view) {
+        int pin = groupService.sendChallengeRequest(jabberId);
+        if(pin == CHALLENGE_REQUEST_CANCELED) finish();
         Log.d(LOG_TAG, "Retrying challenge with jabberId: " + jabberId);
-        txtPin.setText(String.valueOf(groupService.sendChallengeRequest(jabberId)));
+        txtPin.setText(String.valueOf(pin));
         txtStatus.setText("");
         findViewById(R.id.buttonRetryPin).setEnabled(false);
     }
