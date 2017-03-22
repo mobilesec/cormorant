@@ -21,9 +21,14 @@
 package at.usmile.cormorant.framework.messaging;
 
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.IBinder;
@@ -64,6 +69,8 @@ import at.usmile.cormorant.framework.group.GroupChallengeRequest;
 import at.usmile.cormorant.framework.group.GroupChallengeResponse;
 import at.usmile.cormorant.framework.group.GroupUpdateMessage;
 
+import static android.net.ConnectivityManager.CONNECTIVITY_ACTION;
+
 public class MessagingService extends Service implements IncomingChatMessageListener {
 
     private final static String LOG_TAG = MessagingService.class.getSimpleName();
@@ -85,6 +92,7 @@ public class MessagingService extends Service implements IncomingChatMessageList
 
     private Map<CormorantMessage.TYPE, List<CormorantMessageConsumer>> messageListeners = new HashMap<>();
     private List<DeviceIdListener> deviceIdListeners = new LinkedList<>();
+    private boolean initialConnectionSuccess = true;
 
     public MessagingService() {
     }
@@ -94,7 +102,8 @@ public class MessagingService extends Service implements IncomingChatMessageList
         Log.d(LOG_TAG, "MessagingService started");
 
         prefs = getSharedPreferences(PREFERENCE_NAME, Context.MODE_PRIVATE);
-        new ConnectTask().execute();
+        registerReceiver(deviceConnectionReceiver, new IntentFilter(CONNECTIVITY_ACTION));
+        initialConnectionSuccess = connectToXMPP();
     }
 
     private String createMessage(CormorantMessage cormorantMessage){
@@ -185,7 +194,6 @@ public class MessagingService extends Service implements IncomingChatMessageList
         password = prefs.getString(PREF_XMPP_PASSWORD, null);
     }
 
-    //TODO reconnect after connection loss
     private class ConnectTask extends AsyncTask<Void, Void, Void> {
         @Override
         protected Void doInBackground(Void... params) {
@@ -275,10 +283,41 @@ public class MessagingService extends Service implements IncomingChatMessageList
         return sslContext;
     }
 
+    private boolean connectToXMPP(){
+        if(isDeviceConnected()) {
+            new ConnectTask().execute();
+            return true;
+        }
+        else {
+            Log.w(LOG_TAG, "Could not connect to XMPP Server, device is not connected to a network");
+            return false;
+        }
+    }
+
+    //TODO Do we have / want a Util class for stuff like this?
+    private boolean isDeviceConnected(){
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        Network[] activeNetworks = connectivityManager.getAllNetworks();
+        for (Network network: activeNetworks) {
+            NetworkInfo networkInfo = connectivityManager.getNetworkInfo(network);
+            if(networkInfo != null && networkInfo.isConnected()) return true;
+        }
+        return false;
+    }
+
+    private final BroadcastReceiver deviceConnectionReceiver = new BroadcastReceiver() {
+        public void onReceive(Context context, Intent intent) {
+            if ((connection != null && !connection.isConnected())
+                    || (connection == null && !initialConnectionSuccess)) {
+                connectToXMPP();
+            }
+        }
+    };
+
     @Override
     public void onDestroy() {
         connection.disconnect();
-
+        unregisterReceiver(deviceConnectionReceiver);
         Log.d(LOG_TAG, "MessagingService stopped");
     }
 
