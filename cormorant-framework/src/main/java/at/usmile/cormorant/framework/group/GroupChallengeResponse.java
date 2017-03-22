@@ -23,19 +23,13 @@ package at.usmile.cormorant.framework.group;
 import at.usmile.cormorant.framework.messaging.CormorantMessage;
 
 public class GroupChallengeResponse extends CormorantMessage {
-    private String challengeId;
     private TrustedDevice trustedDevice;
     private int pin;
 
-    public GroupChallengeResponse(String challengeId, TrustedDevice trustedDevice, int pin) {
+    public GroupChallengeResponse(TrustedDevice trustedDevice, int pin) {
         super(TYPE.GROUP, CLASS.GROUP_CHALLENGE_RESPONSE);
-        this.challengeId = challengeId;
         this.trustedDevice = trustedDevice;
         this.pin = pin;
-    }
-
-    public String getChallengeId() {
-        return challengeId;
     }
 
     public TrustedDevice getTrustedDevice() {
@@ -49,8 +43,7 @@ public class GroupChallengeResponse extends CormorantMessage {
     @Override
     public String toString() {
         return "GroupChallengeResponse{" +
-                "challengeId='" + challengeId + '\'' +
-                ", trustedDevice=" + trustedDevice +
+                "trustedDevice=" + trustedDevice +
                 ", pin=" + pin +
                 "} " + super.toString();
     }

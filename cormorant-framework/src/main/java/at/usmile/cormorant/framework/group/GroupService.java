@@ -43,12 +43,9 @@ import com.google.gson.reflect.TypeToken;
 import org.jivesoftware.smack.chat2.Chat;
 
 import java.lang.reflect.Type;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
-import java.util.UUID;
 
 import at.usmile.cormorant.framework.GroupListActivity;
 import at.usmile.cormorant.framework.messaging.CormorantMessage;
@@ -70,10 +67,10 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
 
     private SharedPreferences preferences;
     private TrustedDevice self;
+    private GroupChallenge currentGroupChallenge;
     private List<TrustedDevice> group;
     private List<GroupChangeListener> groupChangeListeners = new LinkedList<>();
-    //<challengeId, GC>
-    private Map<String, GroupChallenge> challenges = new HashMap<>();
+
 
     public GroupService() {
     }
@@ -146,21 +143,15 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
         int pin = createPin();
         Log.d(LOG_TAG, "Sending ChallengeRequest to " + targetJabberId + " with pin: " + pin);
 
-        GroupChallenge groupChallenge = new GroupChallenge(
-                pin,
-                targetJabberId);
-        String challengeId = UUID.randomUUID().toString();
-        challenges.put(challengeId, groupChallenge);
-        GroupChallengeRequest groupChallengeRequest = new GroupChallengeRequest(challengeId, self.getJabberId());
+        this.currentGroupChallenge = new GroupChallenge(pin, targetJabberId);
+        GroupChallengeRequest groupChallengeRequest = new GroupChallengeRequest(self.getJabberId());
         messagingService.sendMessage(targetJabberId, groupChallengeRequest);
         return pin;
     }
 
     private void checkChallengeResponse(GroupChallengeResponse groupChallengeResponse, Chat chat){
         Log.d(LOG_TAG, "Checking ChallengeResponse from " + chat.getXmppAddressOfChatPartner());
-        GroupChallenge groupChallenge = challenges.get(groupChallengeResponse.getChallengeId());
-        challenges.remove(groupChallengeResponse.getChallengeId());
-        if(groupChallenge.getPin() == groupChallengeResponse.getPin()){
+        if(currentGroupChallenge.getPin() == groupChallengeResponse.getPin()){
             addTrustedDevice(groupChallengeResponse.getTrustedDevice());
             sendBroadcast(new Intent(DialogPinShowActivity.COMMAND_CLOSE));
             showToast("New device " + groupChallengeResponse.getTrustedDevice().getDevice() + " added successfully");
@@ -179,16 +170,14 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
         Log.d(LOG_TAG, "Received ChallengeRequest from " + chat.getXmppAddressOfChatPartner());
 
         Intent intent = new Intent(this, DialogPinEnterActivity.class);
-        intent.putExtra(DialogPinEnterActivity.KEY_CHALLENGE_ID, groupChallengeRequest.getChallengeId());
         intent.putExtra(DialogPinEnterActivity.KEY_SENDER_JABBER_ID, groupChallengeRequest.getSenderDeviceId());
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
     }
 
-    public void respondToChallengeRequest(String challengeId, int pin, String senderJabberId){
-        Log.d(LOG_TAG, "Responding to Challenge " + challengeId);
+    public void respondToChallengeRequest(int pin, String senderJabberId){
+        Log.d(LOG_TAG, "Responding to Challenge " + currentGroupChallenge);
         messagingService.sendMessage(senderJabberId, new GroupChallengeResponse(
-            challengeId,
             self,
             pin));
     }
@@ -198,9 +187,10 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
     private void synchronizeGroupInfo(){
         Log.d(LOG_TAG, "Synching new group: " + group);
         for(TrustedDevice eachTrustedDevice : group){
-            if(eachTrustedDevice.equals(self)) continue;
-            else messagingService.sendMessage(eachTrustedDevice.getJabberId(),
-                new GroupUpdateMessage(group));
+            if(!eachTrustedDevice.equals(self)){
+                messagingService.sendMessage(eachTrustedDevice.getJabberId(),
+                    new GroupUpdateMessage(group));
+            }
         }
     }
 
