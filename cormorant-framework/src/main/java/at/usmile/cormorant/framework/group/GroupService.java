@@ -25,6 +25,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
@@ -35,8 +36,13 @@ import android.util.Log;
 import android.view.WindowManager;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+
 import org.jivesoftware.smack.chat2.Chat;
 
+import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -57,13 +63,17 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
     private final IBinder mBinder = new GroupService.GroupServiceBinder();
     private final Random random = new Random();
 
+    private static final String PREFERENCE_NAME = "cormorant";
+    private static final String PREF_GROUP_LIST = "groupList";
+
+    private final Gson gson = new GsonBuilder().create();
+
+    private SharedPreferences preferences;
+    private TrustedDevice self;
+    private List<TrustedDevice> group;
     private List<GroupChangeListener> groupChangeListeners = new LinkedList<>();
-    //TODO persistence + recover after destroy (all fields below)
-    private List<TrustedDevice> group = new LinkedList<>();
-    //TODO remove challenge after timeout or just do not persist?
     //<challengeId, GC>
     private Map<String, GroupChallenge> challenges = new HashMap<>();
-    private TrustedDevice self;
 
     public GroupService() {
     }
@@ -71,6 +81,8 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
     @Override
     public void onCreate() {
         Log.d(LOG_TAG, "GroupService started");
+        preferences = getSharedPreferences(PREFERENCE_NAME, Context.MODE_PRIVATE);
+        initGroup();
         Intent intent = new Intent(this, MessagingService.class);
         bindService(intent, messageServiceConnection, Context.BIND_AUTO_CREATE);
     }
@@ -108,7 +120,8 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
 
     @Override
     public void setJabberId(String jabberId) {
-        self = new TrustedDevice(Build.MANUFACTURER, Build.MODEL, getScreenSize(), messagingService.getDeviceID());
+        this.self = new TrustedDevice(Build.MANUFACTURER, Build.MODEL,
+                getScreenSize(), messagingService.getDeviceID());
         if(group.isEmpty()) addTrustedDevice(self);
     }
 
@@ -121,6 +134,7 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
     }
 
     private void notifyGroupChangeListeners(){
+        saveGroup();
         for(GroupChangeListener eachGroupChangeListener : groupChangeListeners){
             eachGroupChangeListener.groupChanged();
         }
@@ -271,6 +285,19 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
                         Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    private void saveGroup(){
+        preferences.edit().putString(PREF_GROUP_LIST, gson.toJson(getGroup())).apply();
+    }
+
+    private  void initGroup(){
+        String groupJson = preferences.getString(PREF_GROUP_LIST, "");
+        if(groupJson.isEmpty()) this.group = new LinkedList<>();
+        else {
+            Type groupListType = new TypeToken<LinkedList<TrustedDevice>>(){}.getType();
+            this.group = gson.fromJson(groupJson, groupListType);
+        }
     }
 
     @Override
