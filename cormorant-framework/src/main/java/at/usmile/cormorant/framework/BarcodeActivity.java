@@ -137,8 +137,8 @@ public class BarcodeActivity extends AppCompatActivity {
             String content = result.getContents();
             if (content == null) {
                 Toast.makeText(this, "QR Scan cancelled", Toast.LENGTH_LONG).show();
-                //FIXME only for debugging Samsung 12.2 to Nexus 7
-                String nexus7JabberId = "cormorant-9b0c5972-1cb0-4e8f-9afc-8177dec3b065@0nl1ne.cc";
+                //FIXME only for developer Nexus 7 debugging
+                String nexus7JabberId = "cormorant-c50b4b30-8ac5-42a0-814e-e22121050288@0nl1ne.cc";
                 int pin = groupService.sendChallengeRequest(nexus7JabberId);
                 showPinDialog(pin, nexus7JabberId);
             } else {

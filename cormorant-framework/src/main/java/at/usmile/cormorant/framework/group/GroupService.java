@@ -62,6 +62,7 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
 
     private static final String PREFERENCE_NAME = "cormorant";
     private static final String PREF_GROUP_LIST = "groupList";
+    private static final String PREF_GROUP_SELF = "groupSelf";
 
     private final Gson gson = new GsonBuilder().create();
 
@@ -79,6 +80,7 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
     public void onCreate() {
         Log.d(LOG_TAG, "GroupService started");
         preferences = getSharedPreferences(PREFERENCE_NAME, Context.MODE_PRIVATE);
+        initSelf();
         initGroup();
         Intent intent = new Intent(this, MessagingService.class);
         bindService(intent, messageServiceConnection, Context.BIND_AUTO_CREATE);
@@ -117,8 +119,13 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
 
     @Override
     public void setJabberId(String jabberId) {
-        this.self = new TrustedDevice(Build.MANUFACTURER, Build.MODEL,
-                getScreenSize(), messagingService.getDeviceID());
+        if(getSelf() == null) {
+            this.self = new TrustedDevice(Build.MANUFACTURER, Build.MODEL, getScreenSize(),
+                    messagingService.getDeviceID());
+            saveSelf();
+        }
+        //TODO Raise expection if jabberId changed?
+        else if(!getSelf().getJabberId().equals(jabberId)) Log.w(LOG_TAG, "JabberId changed!");
         if(group.isEmpty()) addTrustedDevice(self);
     }
 
@@ -287,6 +294,18 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
         else {
             Type groupListType = new TypeToken<LinkedList<TrustedDevice>>(){}.getType();
             this.group = gson.fromJson(groupJson, groupListType);
+        }
+    }
+
+    private void saveSelf(){
+        preferences.edit().putString(PREF_GROUP_SELF, gson.toJson(getSelf())).apply();
+    }
+
+    private  void initSelf(){
+        String selfJson = preferences.getString(PREF_GROUP_SELF, "");
+        if(selfJson.isEmpty()) this.group = new LinkedList<>();
+        else {
+            this.self = gson.fromJson(selfJson, TrustedDevice.class);
         }
     }
 
