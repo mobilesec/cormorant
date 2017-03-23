@@ -20,7 +20,6 @@
  */
 package at.usmile.cormorant.framework.group;
 
-import android.app.ListActivity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -28,6 +27,7 @@ import android.content.ServiceConnection;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -35,12 +35,15 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.TextView;
 
 import at.usmile.cormorant.framework.R;
 
-public class GroupListActivity extends ListActivity implements GroupChangeListener {
+public class GroupListActivity extends AppCompatActivity implements GroupChangeListener {
     public static TrustedDevice deviceToRemove;
+
+    private ListView listview;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,6 +53,8 @@ public class GroupListActivity extends ListActivity implements GroupChangeListen
         bindService(intent, groupServiceConnection, Context.BIND_AUTO_CREATE);
 
         setContentView(R.layout.activity_group_list);
+
+        listview = (ListView) findViewById(R.id.group_list_view);
     }
 
     @Override
@@ -61,7 +66,7 @@ public class GroupListActivity extends ListActivity implements GroupChangeListen
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.group_menu, menu);
+        inflater.inflate(R.menu.menu, menu);
         return true;
     }
 
@@ -77,8 +82,8 @@ public class GroupListActivity extends ListActivity implements GroupChangeListen
     }
 
     public void removeDevice(View view) {
-        int position = getListView().getPositionForView(view);
-        deviceToRemove = (TrustedDevice) getListView().getItemAtPosition(position);
+        int position = listview.getPositionForView(view);
+        deviceToRemove = (TrustedDevice) listview.getItemAtPosition(position);
         showRemoveDeviceDialog();
     }
 
@@ -88,7 +93,7 @@ public class GroupListActivity extends ListActivity implements GroupChangeListen
     }
 
     //TODO Better icon for device removal
-    private void createArrayAdapter(){
+    private void createArrayAdapter() {
         ArrayAdapter<TrustedDevice> adapter =
                 new ArrayAdapter<TrustedDevice>(
                         this,
@@ -108,17 +113,17 @@ public class GroupListActivity extends ListActivity implements GroupChangeListen
 
                         ((TextView) view.findViewById(R.id.activity_group_list_text1)).setText(p.getId());
                         ((TextView) view.findViewById(R.id.activity_group_list_text2)).setText(p.getDevice());
-                        ((ImageView) view.findViewById(R.id.activity_group_list_icon)).setImageResource(getIconByScreenSize(p.getScreenSize()));
+                        ((ImageView) view.findViewById(R.id.activity_group_list_icon)).setImageResource(getIconByScreenSize(p.getScreenSize(), groupService.getSelf().equals(p)));
                         //FIXME why is explicit setImageResource needed instead of xml defined icon?
-                        ((ImageView) view.findViewById(R.id.activity_group_list_remove_icon)).setImageResource(R.drawable.ic_line_weight_black_24dp);
+                        //((ImageView) view.findViewById(R.id.activity_group_list_remove_icon)).setImageResource(R.drawable.ic_line_weight_black_24dp);
 
-                        if(groupService.getSelf().equals(p)) view.setBackgroundColor(Color.GREEN);
+
                         return view;
                     }
 
                 };
         // Bind to our new adapter.
-        setListAdapter(adapter);
+        listview.setAdapter(adapter);
     }
 
     @Override
@@ -126,18 +131,19 @@ public class GroupListActivity extends ListActivity implements GroupChangeListen
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                ((ArrayAdapter)getListAdapter()).notifyDataSetChanged();
+                ((ArrayAdapter) listview.getAdapter()).notifyDataSetChanged();
             }
         });
     }
 
-    private int getIconByScreenSize(double screenSize) {
-        if(screenSize >= 7) {
-            return R.drawable.ic_computer_black_24dp;
-        } if(screenSize < 3) {
-            return R.drawable.ic_watch_black_24dp;
+    private int getIconByScreenSize(double screenSize, boolean blue) {
+        if (screenSize >= 7) {
+            return blue ? R.drawable.ic_computer_blue_24dp : R.drawable.ic_computer_black_24dp;
+        }
+        if (screenSize < 3) {
+            return blue ? R.drawable.ic_watch_blue_24dp : R.drawable.ic_watch_black_24dp;
         } else {
-            return R.drawable.ic_phone_android_black_24dp;
+            return blue ? R.drawable.ic_phone_android_blue_24dp : R.drawable.ic_phone_android_black_24dp;
         }
     }
 
