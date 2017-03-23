@@ -23,6 +23,10 @@ dependencies {
 }
 ```
 
+# Development
+
+Make sure to run ```./gradlew licenseFormat``` before commiting to ensure licence headers are correct (or else they break the build). 
+
 # Disclaimer
 
 You are using this application at your own risk. *We are not responsible for any damage caused by this application, incorrect usage or inaccuracies in this manual.*
