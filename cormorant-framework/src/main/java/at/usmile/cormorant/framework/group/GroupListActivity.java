@@ -20,27 +20,29 @@
  */
 package at.usmile.cormorant.framework.group;
 
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
-import android.graphics.Color;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
+import android.view.ContextMenu;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
 import at.usmile.cormorant.framework.R;
+import at.usmile.cormorant.framework.common.TypedServiceConnection;
+import at.usmile.cormorant.framework.lock.DeviceLockCommand;
+import at.usmile.cormorant.framework.messaging.MessagingService;
 
 public class GroupListActivity extends AppCompatActivity implements GroupChangeListener {
+
     public static TrustedDevice deviceToRemove;
 
     private ListView listview;
@@ -49,17 +51,21 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        Intent intent = new Intent(this, GroupService.class);
-        bindService(intent, groupServiceConnection, Context.BIND_AUTO_CREATE);
+        bindService(new Intent(this, GroupService.class), groupService, Context.BIND_AUTO_CREATE);
+        bindService(new Intent(this, MessagingService.class), messagingService, Context.BIND_AUTO_CREATE);
 
         setContentView(R.layout.activity_group_list);
 
         listview = (ListView) findViewById(R.id.group_list_view);
+
+        registerForContextMenu(listview);
     }
 
     @Override
     protected void onDestroy() {
-        if (groupServiceBound) unbindService(groupServiceConnection);
+        if (groupService.isBound()) unbindService(groupService);
+        if (messagingService.isBound()) unbindService(messagingService);
+
         super.onDestroy();
     }
 
@@ -68,6 +74,38 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.menu, menu);
         return true;
+    }
+
+    @Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+        if (v.getId() == R.id.group_list_view) {
+            ListView lv = (ListView) v;
+            AdapterView.AdapterContextMenuInfo acmi = (AdapterView.AdapterContextMenuInfo) menuInfo;
+            TrustedDevice device = (TrustedDevice) lv.getItemAtPosition(acmi.position);
+
+
+            if (groupService.get().getSelf().equals(device)) {
+                menu.add(0, 0, 0, "Leave group");
+            } else {
+                menu.add(0, 0, 0, "Remove device");
+            }
+            menu.add(0, 1, 1, "Lock device");
+            menu.add(0, 2, 2, "Unlock device");
+        }
+    }
+
+    @Override
+    public boolean onContextItemSelected(MenuItem item) {
+        AdapterView.AdapterContextMenuInfo acmi = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
+        TrustedDevice device = (TrustedDevice) listview.getItemAtPosition(acmi.position);
+
+        switch (item.getItemId()) {
+            case 0:
+                removeDevice(device);
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     @Override
@@ -81,9 +119,15 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
         }
     }
 
-    public void removeDevice(View view) {
+    public void lockOrUnlockDevice(View view) {
         int position = listview.getPositionForView(view);
-        deviceToRemove = (TrustedDevice) listview.getItemAtPosition(position);
+        TrustedDevice deviceToLock = (TrustedDevice) listview.getItemAtPosition(position);
+
+        messagingService.get().sendMessage(deviceToLock, new DeviceLockCommand());
+    }
+
+    public void removeDevice(TrustedDevice device) {
+        deviceToRemove = device;
         showRemoveDeviceDialog();
     }
 
@@ -99,7 +143,7 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
                         this,
                         R.layout.activity_group_list_row,
                         R.id.activity_group_list_text1,
-                        groupService.getGroup()) {
+                        groupService.get().getGroup()) {
 
                     @Override
                     public View getView(int position, View contentView, ViewGroup viewGroup) {
@@ -113,10 +157,7 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
 
                         ((TextView) view.findViewById(R.id.activity_group_list_text1)).setText(p.getId());
                         ((TextView) view.findViewById(R.id.activity_group_list_text2)).setText(p.getDevice());
-                        ((ImageView) view.findViewById(R.id.activity_group_list_icon)).setImageResource(getIconByScreenSize(p.getScreenSize(), groupService.getSelf().equals(p)));
-                        //FIXME why is explicit setImageResource needed instead of xml defined icon?
-                        //((ImageView) view.findViewById(R.id.activity_group_list_remove_icon)).setImageResource(R.drawable.ic_line_weight_black_24dp);
-
+                        ((ImageView) view.findViewById(R.id.activity_group_list_icon)).setImageResource(getIconByScreenSize(p.getScreenSize(), groupService.get().getSelf().equals(p)));
 
                         return view;
                     }
@@ -147,24 +188,19 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
         }
     }
 
-    private GroupService groupService;
-    private boolean groupServiceBound = false;
+    private TypedServiceConnection<MessagingService> messagingService = new TypedServiceConnection<>();
 
-    private ServiceConnection groupServiceConnection = new ServiceConnection() {
+    private TypedServiceConnection<GroupService> groupService = new TypedServiceConnection<GroupService>() {
 
         @Override
-        public void onServiceConnected(ComponentName className, IBinder service) {
-            GroupService.GroupServiceBinder binder = (GroupService.GroupServiceBinder) service;
-            groupService = binder.getService();
-            groupServiceBound = true;
+        public void onServiceConnected(GroupService service) {
             createArrayAdapter();
-            groupService.addGroupChangeListener(GroupListActivity.this);
+            service.addGroupChangeListener(GroupListActivity.this);
         }
 
         @Override
-        public void onServiceDisconnected(ComponentName componentName) {
-            groupServiceBound = false;
-            groupService.removeGroupChangeListener(GroupListActivity.this);
+        public void onServiceDisconnected(GroupService service) {
+            service.removeGroupChangeListener(GroupListActivity.this);
         }
     };
 }

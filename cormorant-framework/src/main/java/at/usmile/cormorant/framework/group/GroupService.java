@@ -21,12 +21,9 @@
 package at.usmile.cormorant.framework.group;
 
 import android.app.Service;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.content.SharedPreferences;
-import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
@@ -47,6 +44,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
+import at.usmile.cormorant.framework.common.TypedServiceBinder;
+import at.usmile.cormorant.framework.common.TypedServiceConnection;
 import at.usmile.cormorant.framework.messaging.CormorantMessage;
 import at.usmile.cormorant.framework.messaging.CormorantMessageConsumer;
 import at.usmile.cormorant.framework.messaging.DeviceIdListener;
@@ -57,7 +56,6 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
     public final static int CHALLENGE_REQUEST_CANCELED = -1;
     private final static int PIN_LENGTH = 4;
     private final static String LOG_TAG = GroupService.class.getSimpleName();
-    private final IBinder mBinder = new GroupService.GroupServiceBinder();
     private final Random random = new Random();
 
     private static final String PREFERENCE_NAME = "cormorant";
@@ -82,16 +80,15 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
         preferences = getSharedPreferences(PREFERENCE_NAME, Context.MODE_PRIVATE);
         initSelf();
         initGroup();
-        Intent intent = new Intent(this, MessagingService.class);
-        bindService(intent, messageServiceConnection, Context.BIND_AUTO_CREATE);
+        bindService(new Intent(this, MessagingService.class), messageService, Context.BIND_AUTO_CREATE);
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        messagingService.removeMessageListener(CormorantMessage.TYPE.GROUP, this);
-        messagingService.removeDeviceIdListener(this);
-        if(messagingServiceBound) unbindService(messageServiceConnection);
+        messageService.get().removeMessageListener(CormorantMessage.TYPE.GROUP, this);
+        messageService.get().removeDeviceIdListener(this);
+        if (messageService.isBound()) unbindService(messageService);
     }
 
     public List<TrustedDevice> getGroup() {
@@ -105,86 +102,76 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
     @Override
     public void handleMessage(CormorantMessage cormorantMessage, Chat chat) {
         Log.d(LOG_TAG, "Handling Message:" + cormorantMessage);
-        if(cormorantMessage instanceof GroupChallengeRequest){
+        if (cormorantMessage instanceof GroupChallengeRequest) {
             receiveChallengeRequest((GroupChallengeRequest) cormorantMessage, chat);
-        }
-        else if (cormorantMessage instanceof GroupChallengeResponse){
+        } else if (cormorantMessage instanceof GroupChallengeResponse) {
             checkChallengeResponse((GroupChallengeResponse) cormorantMessage, chat);
-        }
-        else if (cormorantMessage instanceof GroupUpdateMessage){
+        } else if (cormorantMessage instanceof GroupUpdateMessage) {
             receiveGroupUpdate((GroupUpdateMessage) cormorantMessage);
-        }
-        else Log.w(LOG_TAG, "MessageType unknown" + cormorantMessage.getClass());
+        } else Log.w(LOG_TAG, "MessageType unknown" + cormorantMessage.getClass());
     }
 
     @Override
     public void setJabberId(String jabberId) {
-        if(getSelf() == null) {
+        if (getSelf() == null) {
             this.self = new TrustedDevice(Build.MANUFACTURER, Build.MODEL, getScreenSize(),
-                    messagingService.getDeviceID());
+                    messageService.get().getDeviceID());
             saveSelf();
         }
         //TODO Raise expection if jabberId changed?
-        else if(!getSelf().getJabberId().equals(jabberId)) Log.w(LOG_TAG, "JabberId changed!");
-        if(group.isEmpty()) addTrustedDevice(self);
+        else if (!getSelf().getJabberId().equals(jabberId)) Log.w(LOG_TAG, "JabberId changed!");
+        if (group.isEmpty()) addTrustedDevice(self);
     }
 
-    public void addGroupChangeListener(GroupChangeListener groupChangeListener){
+    public void addGroupChangeListener(GroupChangeListener groupChangeListener) {
         this.groupChangeListeners.add(groupChangeListener);
     }
 
-    public void removeGroupChangeListener(GroupChangeListener groupChangeListener){
+    public void removeGroupChangeListener(GroupChangeListener groupChangeListener) {
         this.groupChangeListeners.remove(groupChangeListener);
     }
 
-    private void notifyGroupChangeListeners(){
+    private void notifyGroupChangeListeners() {
         saveGroup();
-        for(GroupChangeListener eachGroupChangeListener : groupChangeListeners){
+        for (GroupChangeListener eachGroupChangeListener : groupChangeListeners) {
             eachGroupChangeListener.groupChanged();
         }
     }
 
     //--> DEVICE A
-    public int sendChallengeRequest(String targetJabberId){
-        if(isJabberIdAlreadyInGroup(targetJabberId)){
-            Log.d(LOG_TAG, "ChallengeRequest canceled - device is already in group - JabberId: " + targetJabberId);
+    public int sendChallengeRequest(TrustedDevice deviceToTrust) {
+        if (group.contains(deviceToTrust)) {
+            Log.d(LOG_TAG, "ChallengeRequest canceled - device is already in group: " + deviceToTrust);
             showToast("Device is already in group");
             return CHALLENGE_REQUEST_CANCELED;
         }
-        int pin = createPin();
-        Log.d(LOG_TAG, "Sending ChallengeRequest to " + targetJabberId + " with pin: " + pin);
 
-        this.currentGroupChallenge = new GroupChallenge(pin, targetJabberId);
+        int pin = createPin();
+        Log.d(LOG_TAG, "Sending ChallengeRequest to " + deviceToTrust.getJabberId() + " with pin: " + pin);
+
+        this.currentGroupChallenge = new GroupChallenge(pin, deviceToTrust.getJabberId());
         GroupChallengeRequest groupChallengeRequest = new GroupChallengeRequest(self.getJabberId());
-        messagingService.sendMessage(targetJabberId, groupChallengeRequest);
+        messageService.get().sendMessage(deviceToTrust, groupChallengeRequest);
         return pin;
     }
 
-    private boolean isJabberIdAlreadyInGroup(String jabberId){
-        for(TrustedDevice eachTrustedDevice : this.group){
-            if(eachTrustedDevice.getJabberId().equals(jabberId)) return true;
-        }
-        return false;
-    }
-
-    private void checkChallengeResponse(GroupChallengeResponse groupChallengeResponse, Chat chat){
+    private void checkChallengeResponse(GroupChallengeResponse groupChallengeResponse, Chat chat) {
         Log.d(LOG_TAG, "Checking ChallengeResponse from " + chat.getXmppAddressOfChatPartner());
-        if(currentGroupChallenge.getPin() == groupChallengeResponse.getPin()){
+        if (currentGroupChallenge.getPin() == groupChallengeResponse.getPin()) {
             addTrustedDevice(groupChallengeResponse.getTrustedDevice());
             sendBroadcast(new Intent(DialogPinShowActivity.COMMAND_CLOSE));
             showToast("New device " + groupChallengeResponse.getTrustedDevice().getDevice() + " added successfully");
             Intent intent = new Intent(this, GroupListActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);
-        }
-        else {
+        } else {
             sendBroadcast(new Intent(DialogPinShowActivity.COMMAND_PIN_FAILED));
         }
     }
     //<-- DEVICE A
 
     //--> DEVICE B
-    private void receiveChallengeRequest(GroupChallengeRequest groupChallengeRequest, Chat chat){
+    private void receiveChallengeRequest(GroupChallengeRequest groupChallengeRequest, Chat chat) {
         Log.d(LOG_TAG, "Received ChallengeRequest from " + chat.getXmppAddressOfChatPartner());
 
         Intent intent = new Intent(this, DialogPinEnterActivity.class);
@@ -193,68 +180,64 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
         startActivity(intent);
     }
 
-    public void respondToChallengeRequest(int pin, String senderJabberId){
+    public void respondToChallengeRequest(int pin, TrustedDevice challengingDevice) {
         Log.d(LOG_TAG, "Responding to Challenge " + currentGroupChallenge);
-        messagingService.sendMessage(senderJabberId, new GroupChallengeResponse(
-            self,
-            pin));
+        messageService.get().sendMessage(challengingDevice, new GroupChallengeResponse(
+                self,
+                pin));
     }
     //<-- DEVICE B
 
     //TODO Do real synchronisation + how to handle offline devices during sync?
-    private void synchronizeGroupInfo(){
+    private void synchronizeGroupInfo() {
         Log.d(LOG_TAG, "Synching new group: " + group);
-        for(TrustedDevice eachTrustedDevice : group){
-            if(!eachTrustedDevice.equals(self)){
-                messagingService.sendMessage(eachTrustedDevice.getJabberId(),
-                    new GroupUpdateMessage(group));
+        for (TrustedDevice device : group) {
+            if (!device.equals(self)) {
+                messageService.get().sendMessage(device, new GroupUpdateMessage(group));
             }
         }
     }
 
-    private void synchronizeGroupInfo(TrustedDevice removedDevice){
+    private void synchronizeGroupInfo(TrustedDevice removedDevice) {
         Log.d(LOG_TAG, "Synching device removal to: " + removedDevice);
-        messagingService.sendMessage(removedDevice.getJabberId(),
-            new GroupUpdateMessage(group));
+        messageService.get().sendMessage(removedDevice, new GroupUpdateMessage(group));
         synchronizeGroupInfo();
     }
 
-    private void receiveGroupUpdate(GroupUpdateMessage groupUpdateMessage){
+    private void receiveGroupUpdate(GroupUpdateMessage groupUpdateMessage) {
         Log.d(LOG_TAG, "Received GroupUpdateMessage: " + groupUpdateMessage);
         //device has been removed from group by other device
-        if(!groupUpdateMessage.getGroup().contains(self)){
+        if (!groupUpdateMessage.getGroup().contains(self)) {
             this.group.clear();
             this.group.add(self);
             showToast("Device has been removed from authentication group");
-        }
-        else {
+        } else {
             int oldGroupCount = this.group.size();
             this.group.clear();
             this.group.addAll(groupUpdateMessage.getGroup());
 
             showToast("Group has been refreshed - 1 device "
-                + ((oldGroupCount - this.group.size() < 0) ?  "added" : "removed"));
+                    + ((oldGroupCount - this.group.size() < 0) ? "added" : "removed"));
         }
         notifyGroupChangeListeners();
     }
 
-    public void removeTrustedDevice(TrustedDevice deviceToRemove){
+    public void removeTrustedDevice(TrustedDevice deviceToRemove) {
         Log.d(LOG_TAG, "Removing device: " + deviceToRemove);
         //TODO create new key
-        if(deviceToRemove.equals(self)){
+        if (deviceToRemove.equals(self)) {
             this.group.remove(self);
             synchronizeGroupInfo();
             this.group.clear();
             this.group.add(self);
-        }
-        else {
+        } else {
             this.group.remove(deviceToRemove);
             synchronizeGroupInfo(deviceToRemove);
         }
         notifyGroupChangeListeners();
     }
 
-    private void addTrustedDevice(TrustedDevice trustedDevice){
+    private void addTrustedDevice(TrustedDevice trustedDevice) {
         //TODO create new key
         Log.d(LOG_TAG, "Adding new trusted device: " + trustedDevice);
         group.add(trustedDevice);
@@ -263,7 +246,7 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
         notifyGroupChangeListeners();
     }
 
-    private int createPin(){
+    private int createPin() {
         int pinPrefix = (int) Math.pow(10, (PIN_LENGTH - 1));
         int pinRandomBorder = (pinPrefix * 10) - (pinPrefix + 1);
         return random.nextInt(pinRandomBorder) + pinPrefix;
@@ -272,7 +255,7 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
     //TODO Find more reliable implementation (navigation bar is not count = wrong results)
     private double getScreenSize() {
         DisplayMetrics dm = new DisplayMetrics();
-        ((WindowManager)getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getMetrics(dm);
+        ((WindowManager) getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getMetrics(dm);
 
         int width = dm.widthPixels;
         int height = dm.heightPixels;
@@ -283,7 +266,7 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
         return Math.sqrt(x + y);
     }
 
-    private void showToast(final String message){
+    private void showToast(final String message) {
         Handler handler = new Handler(Looper.getMainLooper());
         handler.post(new Runnable() {
             @Override
@@ -295,26 +278,27 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
         });
     }
 
-    private void saveGroup(){
+    private void saveGroup() {
         preferences.edit().putString(PREF_GROUP_LIST, gson.toJson(getGroup())).apply();
     }
 
-    private  void initGroup(){
+    private void initGroup() {
         String groupJson = preferences.getString(PREF_GROUP_LIST, "");
-        if(groupJson.isEmpty()) this.group = new LinkedList<>();
+        if (groupJson.isEmpty()) this.group = new LinkedList<>();
         else {
-            Type groupListType = new TypeToken<LinkedList<TrustedDevice>>(){}.getType();
+            Type groupListType = new TypeToken<LinkedList<TrustedDevice>>() {
+            }.getType();
             this.group = gson.fromJson(groupJson, groupListType);
         }
     }
 
-    private void saveSelf(){
+    private void saveSelf() {
         preferences.edit().putString(PREF_GROUP_SELF, gson.toJson(getSelf())).apply();
     }
 
-    private  void initSelf(){
+    private void initSelf() {
         String selfJson = preferences.getString(PREF_GROUP_SELF, "");
-        if(selfJson.isEmpty()) this.group = new LinkedList<>();
+        if (selfJson.isEmpty()) this.group = new LinkedList<>();
         else {
             this.self = gson.fromJson(selfJson, TrustedDevice.class);
         }
@@ -322,32 +306,15 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
 
     @Override
     public IBinder onBind(Intent intent) {
-        return mBinder;
+        return TypedServiceBinder.from(this);
     }
 
-    public class GroupServiceBinder extends Binder {
-        public GroupService getService() {
-            return GroupService.this;
-        }
-    }
-
-    private MessagingService messagingService;
-    private boolean messagingServiceBound = false;
-
-    private ServiceConnection messageServiceConnection = new ServiceConnection() {
+    private TypedServiceConnection<MessagingService> messageService = new TypedServiceConnection<MessagingService>() {
 
         @Override
-        public void onServiceConnected(ComponentName className, IBinder service) {
-            MessagingService.MessagingServiceBinder binder = (MessagingService.MessagingServiceBinder) service;
-            messagingService = binder.getService();
-            messagingServiceBound = true;
-            messagingService.addMessageListener(CormorantMessage.TYPE.GROUP, GroupService.this);
-            messagingService.addDeviceIdListener(GroupService.this);
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName componentName) {
-            messagingServiceBound = false;
+        public void onServiceConnected(MessagingService service) {
+            service.addMessageListener(CormorantMessage.TYPE.GROUP, GroupService.this);
+            service.addDeviceIdListener(GroupService.this);
         }
     };
 

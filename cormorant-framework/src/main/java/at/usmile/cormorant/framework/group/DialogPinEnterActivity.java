@@ -31,10 +31,15 @@ import android.view.View;
 import android.widget.EditText;
 
 import at.usmile.cormorant.framework.R;
+import at.usmile.cormorant.framework.common.TypedServiceConnection;
 
 public class DialogPinEnterActivity extends AppCompatActivity {
+
     public static final String KEY_SENDER_JABBER_ID = "senderJabberId";
+
     private String senderJabberId;
+
+    private TypedServiceConnection<GroupService> groupService = new TypedServiceConnection<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,38 +47,19 @@ public class DialogPinEnterActivity extends AppCompatActivity {
         setContentView(R.layout.activity_dialog_pin_enter);
         senderJabberId = getIntent().getStringExtra(KEY_SENDER_JABBER_ID);
 
-        Intent intent = new Intent(this, GroupService.class);
-        bindService(intent, groupServiceConnection, Context.BIND_AUTO_CREATE);
+        bindService(new Intent(this, GroupService.class), groupService, Context.BIND_AUTO_CREATE);
     }
 
     @Override
     protected void onDestroy() {
-        if (groupServiceBound) unbindService(groupServiceConnection);
+        if (groupService.isBound()) unbindService(groupService);
         super.onDestroy();
     }
 
     public void setPin(View view) {
         EditText editPin = (EditText) findViewById(R.id.editPin);
-        groupService.respondToChallengeRequest(Integer.parseInt(editPin.getText().toString()), senderJabberId);
+        groupService.get().respondToChallengeRequest(Integer.parseInt(editPin.getText().toString()), new TrustedDevice(senderJabberId));
         finish();
     }
 
-
-    private GroupService groupService;
-    private boolean groupServiceBound = false;
-
-    private ServiceConnection groupServiceConnection = new ServiceConnection() {
-
-        @Override
-        public void onServiceConnected(ComponentName className, IBinder service) {
-            GroupService.GroupServiceBinder binder = (GroupService.GroupServiceBinder) service;
-            groupService = binder.getService();
-            groupServiceBound = true;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName componentName) {
-            groupServiceBound = false;
-        }
-    };
 }

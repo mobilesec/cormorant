@@ -18,38 +18,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package at.usmile.cormorant.framework.messaging;
+package at.usmile.cormorant.framework.lock;
 
-public abstract class CormorantMessage {
-    private TYPE type;
-    private CLASS clazz;
+import at.usmile.cormorant.framework.messaging.CormorantMessage;
 
-    public CormorantMessage(TYPE type, CLASS clazz) {
-        this.type = type;
-        this.clazz = clazz;
+
+public class DeviceLockCommand extends CormorantMessage {
+
+    public DeviceLockCommand() {
+        super(TYPE.DEVICE, CLASS.DEVICE_LOCK_COMMAND);
     }
 
-    public TYPE getType() {
-        return type;
-    }
-
-    public CLASS getClazz() {
-        return clazz;
-    }
-
-    public enum TYPE {
-        GROUP, DEVICE
-    }
-
-    public enum CLASS {
-        GROUP_CHALLENGE_REQUEST, GROUP_CHALLENGE_RESPONSE, GROUP_UPDATE, DEVICE_LOCK_COMMAND
-    }
-
-    @Override
-    public String toString() {
-        return "CormorantMessage{" +
-                "type=" + type +
-                ", clazz=" + clazz +
-                '}';
-    }
 }

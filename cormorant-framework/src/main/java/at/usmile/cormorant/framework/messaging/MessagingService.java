@@ -65,9 +65,12 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 
+import at.usmile.cormorant.framework.common.TypedServiceBinder;
 import at.usmile.cormorant.framework.group.GroupChallengeRequest;
 import at.usmile.cormorant.framework.group.GroupChallengeResponse;
 import at.usmile.cormorant.framework.group.GroupUpdateMessage;
+import at.usmile.cormorant.framework.group.TrustedDevice;
+import at.usmile.cormorant.framework.lock.DeviceLockCommand;
 
 import static android.net.ConnectivityManager.CONNECTIVITY_ACTION;
 
@@ -80,7 +83,6 @@ public class MessagingService extends Service implements IncomingChatMessageList
     private static final String PREF_XMPP_USER = "xmppUser";
     private static final String PREF_XMPP_PASSWORD = "xmppPassword";
 
-    private final IBinder mBinder = new MessagingServiceBinder();
     private final Gson gson = new GsonBuilder().create();
 
     private SharedPreferences prefs;
@@ -106,25 +108,24 @@ public class MessagingService extends Service implements IncomingChatMessageList
         initialConnectionSuccess = connectToXMPP();
     }
 
-    private String createMessage(CormorantMessage cormorantMessage){
+    private String createMessage(CormorantMessage cormorantMessage) {
         String message = cormorantMessage.getClazz() + MESSAGE_SPLIT_CHAR;
         message += gson.toJson(cormorantMessage);
         Log.d(LOG_TAG, "Created message: " + message);
         return message;
     }
 
-    private CormorantMessage parseMessage(String message){
+    private CormorantMessage parseMessage(String message) {
         String[] parts = message.split(MESSAGE_SPLIT_CHAR);
-        if(CormorantMessage.CLASS.GROUP_CHALLENGE_REQUEST.toString().equals(parts[0])){
+        if (CormorantMessage.CLASS.GROUP_CHALLENGE_REQUEST.toString().equals(parts[0])) {
             return gson.fromJson(parts[1], GroupChallengeRequest.class);
-        }
-        else if(CormorantMessage.CLASS.GROUP_CHALLENGE_RESPONSE.toString().equals(parts[0])){
+        } else if (CormorantMessage.CLASS.GROUP_CHALLENGE_RESPONSE.toString().equals(parts[0])) {
             return gson.fromJson(parts[1], GroupChallengeResponse.class);
-        }
-        else if(CormorantMessage.CLASS.GROUP_UPDATE.toString().equals(parts[0])){
+        } else if (CormorantMessage.CLASS.GROUP_UPDATE.toString().equals(parts[0])) {
             return gson.fromJson(parts[1], GroupUpdateMessage.class);
-        }
-        else {
+        } else if (CormorantMessage.CLASS.DEVICE_LOCK_COMMAND.toString().equals(parts[0])) {
+            return gson.fromJson(parts[1], DeviceLockCommand.class);
+        } else {
             Log.w(LOG_TAG, "ClassType unknown" + parts[0]);
             return null;
         }
@@ -135,19 +136,19 @@ public class MessagingService extends Service implements IncomingChatMessageList
         Log.d(LOG_TAG, "New message from " + from + ": " + message.getBody());
 
         final CormorantMessage cormorantMessage = parseMessage(message.getBody());
-        if(cormorantMessage == null) return;
+        if (cormorantMessage == null) return;
         List<CormorantMessageConsumer> messageConsumers = messageListeners.get(cormorantMessage.getType());
-        if(messageConsumers != null) {
-            for(CormorantMessageConsumer eachConsumer : messageConsumers){
+        if (messageConsumers != null) {
+            for (CormorantMessageConsumer eachConsumer : messageConsumers) {
                 eachConsumer.handleMessage(cormorantMessage, chat);
             }
         }
     }
 
-    public void sendMessage(String jabberId, CormorantMessage cormorantMessage){
+    public void sendMessage(TrustedDevice device, CormorantMessage cormorantMessage) {
         try {
             ChatManager chatManager = ChatManager.getInstanceFor(connection);
-            EntityBareJid receiver = JidCreate.entityBareFrom(jabberId);
+            EntityBareJid receiver = JidCreate.entityBareFrom(device.getJabberId());
             Chat chat = chatManager.chatWith(receiver);
             chat.send(createMessage(cormorantMessage));
         } catch (XmppStringprepException | SmackException.NotConnectedException | InterruptedException e) {
@@ -156,9 +157,9 @@ public class MessagingService extends Service implements IncomingChatMessageList
         }
     }
 
-    public void addMessageListener(CormorantMessage.TYPE messageType, CormorantMessageConsumer messageConsumer){
+    public void addMessageListener(CormorantMessage.TYPE messageType, CormorantMessageConsumer messageConsumer) {
         List<CormorantMessageConsumer> messageConsumers = messageListeners.get(messageType);
-        if(messageConsumers == null) {
+        if (messageConsumers == null) {
             messageConsumers = new LinkedList<>();
             messageListeners.put(messageType, messageConsumers);
         }
@@ -166,26 +167,25 @@ public class MessagingService extends Service implements IncomingChatMessageList
         Log.d(LOG_TAG, "New MessageConsumer added: " + messageConsumer);
     }
 
-    public void removeMessageListener(CormorantMessage.TYPE messageType, CormorantMessageConsumer messageConsumer){
+    public void removeMessageListener(CormorantMessage.TYPE messageType, CormorantMessageConsumer messageConsumer) {
         List<CormorantMessageConsumer> messageConsumers = messageListeners.get(messageType);
-        if(messageConsumers != null) {
+        if (messageConsumers != null) {
             messageConsumers.remove(messageConsumer);
             Log.d(LOG_TAG, "Removed MessageConsumer: " + messageConsumer);
-        }
-        else Log.w(LOG_TAG, "MessageConsumer not found");
+        } else Log.w(LOG_TAG, "MessageConsumer not found");
     }
 
-    private void updateDeviceId(String jabberId){
-        for(DeviceIdListener eachDeviceIdListener : this.deviceIdListeners){
+    private void updateDeviceId(String jabberId) {
+        for (DeviceIdListener eachDeviceIdListener : this.deviceIdListeners) {
             eachDeviceIdListener.setJabberId(jabberId);
         }
     }
 
-    public void addDeviceIdListener(DeviceIdListener deviceIdListener){
+    public void addDeviceIdListener(DeviceIdListener deviceIdListener) {
         this.deviceIdListeners.add(deviceIdListener);
     }
 
-    public void removeDeviceIdListener(DeviceIdListener deviceIdListener){
+    public void removeDeviceIdListener(DeviceIdListener deviceIdListener) {
         this.deviceIdListeners.remove(deviceIdListener);
     }
 
@@ -283,24 +283,23 @@ public class MessagingService extends Service implements IncomingChatMessageList
         return sslContext;
     }
 
-    private boolean connectToXMPP(){
-        if(isDeviceConnected()) {
+    private boolean connectToXMPP() {
+        if (isDeviceConnected()) {
             new ConnectTask().execute();
             return true;
-        }
-        else {
+        } else {
             Log.w(LOG_TAG, "Could not connect to XMPP Server, device is not connected to a network");
             return false;
         }
     }
 
     //TODO Do we have / want a Util class for stuff like this?
-    private boolean isDeviceConnected(){
+    private boolean isDeviceConnected() {
         ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         Network[] activeNetworks = connectivityManager.getAllNetworks();
-        for (Network network: activeNetworks) {
+        for (Network network : activeNetworks) {
             NetworkInfo networkInfo = connectivityManager.getNetworkInfo(network);
-            if(networkInfo != null && networkInfo.isConnected()) return true;
+            if (networkInfo != null && networkInfo.isConnected()) return true;
         }
         return false;
     }
@@ -327,13 +326,7 @@ public class MessagingService extends Service implements IncomingChatMessageList
 
     @Override
     public IBinder onBind(Intent intent) {
-        return mBinder;
+        return TypedServiceBinder.from(this);
     }
 
-    public class MessagingServiceBinder extends Binder {
-        public MessagingService getService() {
-            // Return this instance of LocalService so clients can call public methods
-            return MessagingService.this;
-        }
-    }
 }

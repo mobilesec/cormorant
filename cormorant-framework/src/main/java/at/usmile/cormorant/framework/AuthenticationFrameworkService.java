@@ -42,6 +42,7 @@ import at.usmile.cormorant.api.CormorantConstants;
 import at.usmile.cormorant.api.Utils;
 import at.usmile.cormorant.api.model.StatusDataConfidence;
 import at.usmile.cormorant.api.model.StatusDataRisk;
+import at.usmile.cormorant.framework.common.TypedServiceConnection;
 import at.usmile.cormorant.framework.group.GroupService;
 import at.usmile.cormorant.framework.lock.LockService;
 import at.usmile.cormorant.framework.messaging.MessagingService;
@@ -80,10 +81,8 @@ public class AuthenticationFrameworkService extends Service {
     private PluginManager pluginManager = PluginManager.getInstance();
     private DecisionModule decisionModule;
 
-    private MessagingService messagingService;
-    private LockService lockService;
-    private boolean messagingServiceBound = false;
-
+    private TypedServiceConnection<MessagingService> messagingService = new TypedServiceConnection() ;
+    private TypedServiceConnection<LockService> lockService = new TypedServiceConnection() ;
 
     class PluginMessageHandler extends Handler {
         @Override
@@ -153,16 +152,9 @@ public class AuthenticationFrameworkService extends Service {
         reconnectAllPlugins();
         initDecisionModule();
 
-        Intent messagingServiceIntent = new Intent(this, MessagingService.class);
-        startService(messagingServiceIntent);
-        bindService(messagingServiceIntent, messagingServiceConnection, Context.BIND_AUTO_CREATE);
-
-        Intent groupServiceIntent = new Intent(this, GroupService.class);
-        startService(groupServiceIntent);
-
-        Intent lockServiceIntent = new Intent(this, LockService.class);
-        startService(lockServiceIntent);
-        bindService(lockServiceIntent, lockServiceConnection, Context.BIND_AUTO_CREATE);
+        startService(new Intent(this, GroupService.class));
+        bindService(new Intent(this, MessagingService.class), messagingService, Context.BIND_AUTO_CREATE);
+        bindService(new Intent(this, LockService.class), lockService, Context.BIND_AUTO_CREATE);
     }
 
     @Override
@@ -170,8 +162,8 @@ public class AuthenticationFrameworkService extends Service {
         Log.d(LOG_TAG, "AuthenticationFrameworkService stopped");
         decisionModule.stop();
 
-        unbindService(messagingServiceConnection);
-        unbindService(lockServiceConnection);
+        if(messagingService.isBound()) unbindService(messagingService);
+        if(lockService.isBound()) unbindService(lockService);
     }
 
     @Override
@@ -228,31 +220,4 @@ public class AuthenticationFrameworkService extends Service {
         }.execute();
     }
 
-    private ServiceConnection messagingServiceConnection = new ServiceConnection() {
-
-        @Override
-        public void onServiceConnected(ComponentName className, IBinder service) {
-            MessagingService.MessagingServiceBinder binder = (MessagingService.MessagingServiceBinder) service;
-            messagingService = binder.getService();
-            messagingServiceBound = true;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName arg0) {
-            messagingServiceBound = false;
-        }
-    };
-
-    private ServiceConnection lockServiceConnection = new ServiceConnection() {
-
-        @Override
-        public void onServiceConnected(ComponentName className, IBinder service) {
-            LockService.LockServiceBinder binder = (LockService.LockServiceBinder) service;
-            lockService = binder.getService();
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName arg0) {
-        }
-    };
 }

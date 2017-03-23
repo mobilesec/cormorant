@@ -34,6 +34,7 @@ import android.view.View;
 import android.widget.TextView;
 
 import at.usmile.cormorant.framework.R;
+import at.usmile.cormorant.framework.common.TypedServiceConnection;
 
 import static at.usmile.cormorant.framework.group.GroupService.CHALLENGE_REQUEST_CANCELED;
 
@@ -47,6 +48,9 @@ public class DialogPinShowActivity extends AppCompatActivity {
     public static final String COMMAND_CLOSE = "at.usmile.cormorant.framework.group.close";
     public static final String COMMAND_PIN_FAILED = "at.usmile.cormorant.framework.group.pinFailed";
 
+
+    private TypedServiceConnection<GroupService> groupService = new TypedServiceConnection<>();
+
     private TextView txtPin;
     private String jabberId;
     private TextView txtStatus;
@@ -54,8 +58,7 @@ public class DialogPinShowActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Intent intent = new Intent(this, GroupService.class);
-        bindService(intent, groupServiceConnection, Context.BIND_AUTO_CREATE);
+        bindService(new Intent(this, GroupService.class), groupService, Context.BIND_AUTO_CREATE);
 
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(COMMAND_CLOSE);
@@ -72,7 +75,7 @@ public class DialogPinShowActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         unregisterReceiver(updateReceiver);
-        if (groupServiceBound) unbindService(groupServiceConnection);
+        if (groupService.isBound()) unbindService(groupService);
         super.onDestroy();
     }
 
@@ -95,7 +98,7 @@ public class DialogPinShowActivity extends AppCompatActivity {
     };
 
     public void retryPin(View view) {
-        int pin = groupService.sendChallengeRequest(jabberId);
+        int pin = groupService.get().sendChallengeRequest(new TrustedDevice(jabberId));
         if(pin == CHALLENGE_REQUEST_CANCELED) finish();
         Log.d(LOG_TAG, "Retrying challenge with jabberId: " + jabberId);
         txtPin.setText(String.valueOf(pin));
@@ -108,21 +111,4 @@ public class DialogPinShowActivity extends AppCompatActivity {
         finish();
     }
 
-    private GroupService groupService;
-    private boolean groupServiceBound = false;
-
-    private ServiceConnection groupServiceConnection = new ServiceConnection() {
-
-        @Override
-        public void onServiceConnected(ComponentName className, IBinder service) {
-            GroupService.GroupServiceBinder binder = (GroupService.GroupServiceBinder) service;
-            groupService = binder.getService();
-            groupServiceBound = true;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName componentName) {
-            groupServiceBound = false;
-        }
-    };
 }

@@ -18,38 +18,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package at.usmile.cormorant.framework.messaging;
+package at.usmile.cormorant.framework.common;
 
-public abstract class CormorantMessage {
-    private TYPE type;
-    private CLASS clazz;
+import android.app.Service;
+import android.os.Binder;
 
-    public CormorantMessage(TYPE type, CLASS clazz) {
-        this.type = type;
-        this.clazz = clazz;
+
+public class TypedServiceBinder<T extends Service> extends Binder {
+
+    /**
+     * Factory method
+     */
+    public static <T extends Service> TypedServiceBinder<T> from(T service) {
+        return new TypedServiceBinder<T>(service);
     }
 
-    public TYPE getType() {
-        return type;
+    private T service;
+
+    public TypedServiceBinder(T service) {
+        this.service = service;
     }
 
-    public CLASS getClazz() {
-        return clazz;
+    public T getService() {
+        return service;
     }
 
-    public enum TYPE {
-        GROUP, DEVICE
-    }
-
-    public enum CLASS {
-        GROUP_CHALLENGE_REQUEST, GROUP_CHALLENGE_RESPONSE, GROUP_UPDATE, DEVICE_LOCK_COMMAND
-    }
-
-    @Override
-    public String toString() {
-        return "CormorantMessage{" +
-                "type=" + type +
-                ", clazz=" + clazz +
-                '}';
-    }
 }

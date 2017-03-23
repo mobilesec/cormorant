@@ -30,6 +30,13 @@ public class TrustedDevice {
 
     private String jabberId;
 
+    /*
+    * Only to be used by the Group Service for group challenge and response.
+    * */
+    TrustedDevice(String jabberId) {
+        this(null, null, 0, jabberId);
+    }
+
     public TrustedDevice(String id, String device, double screenSize, String jabberId) {
         this.id = id;
         this.device = device;

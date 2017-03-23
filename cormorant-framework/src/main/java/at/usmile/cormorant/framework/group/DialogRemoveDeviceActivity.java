@@ -30,6 +30,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 
 import at.usmile.cormorant.framework.R;
+import at.usmile.cormorant.framework.common.TypedServiceConnection;
 
 public class DialogRemoveDeviceActivity extends AppCompatActivity {
 
@@ -38,36 +39,26 @@ public class DialogRemoveDeviceActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dialog_remove_device);
         Intent intent = new Intent(this, GroupService.class);
-        bindService(intent, groupServiceConnection, Context.BIND_AUTO_CREATE);
+        bindService(intent, groupService, Context.BIND_AUTO_CREATE);
     }
 
     @Override
     protected void onDestroy() {
-        if (groupServiceBound) unbindService(groupServiceConnection);
+        if (groupService.isBound()) unbindService(groupService);
         super.onDestroy();
     }
 
-    private GroupService groupService;
-    private boolean groupServiceBound = false;
-    private ServiceConnection groupServiceConnection = new ServiceConnection() {
+    private TypedServiceConnection<GroupService> groupService = new TypedServiceConnection<GroupService>() {
 
         @Override
-        public void onServiceConnected(ComponentName className, IBinder service) {
-            GroupService.GroupServiceBinder binder = (GroupService.GroupServiceBinder) service;
-            groupService = binder.getService();
-            groupServiceBound = true;
-            if(GroupListActivity.deviceToRemove.equals(groupService.getSelf())) setTitle("Leave group?");
+        public void onServiceConnected(GroupService service) {
+            if(GroupListActivity.deviceToRemove.equals(service.getSelf())) setTitle("Leave group?");
             else setTitle("Remove device?");
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName componentName) {
-            groupServiceBound = false;
         }
     };
 
     public void ok(View view) {
-        groupService.removeTrustedDevice(GroupListActivity.deviceToRemove);
+        groupService.get().removeTrustedDevice(GroupListActivity.deviceToRemove);
         GroupListActivity.deviceToRemove = null;
         finish();
     }

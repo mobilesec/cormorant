@@ -49,6 +49,7 @@
         android:layout_height="32dp"
         android:layout_margin="4dp"
         android:layout_weight="0"
-        android:onClick="removeDevice"
-        app:srcCompat="@drawable/ic_line_weight_black_24dp" />
+        android:onClick="lockOrUnlockDevice"
+
+        app:srcCompat="@drawable/ic_lock_black_24dp" />
 </LinearLayout>
