@@ -18,7 +18,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package at.usmile.cormorant.framework;
+package at.usmile.cormorant.framework.group;
 
 import android.app.ListActivity;
 import android.content.ComponentName;
@@ -37,10 +37,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import at.usmile.cormorant.framework.group.DialogRemoveDeviceActivity;
-import at.usmile.cormorant.framework.group.GroupChangeListener;
-import at.usmile.cormorant.framework.group.GroupService;
-import at.usmile.cormorant.framework.group.TrustedDevice;
+import at.usmile.cormorant.framework.R;
 
 public class GroupListActivity extends ListActivity implements GroupChangeListener {
     public static TrustedDevice deviceToRemove;

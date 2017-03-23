@@ -65,11 +65,11 @@
         </receiver>
 
         <activity
-            android:name=".BarcodeActivity"
+            android:name=".group.BarcodeActivity"
             android:configChanges="orientation|keyboardHidden|screenSize"
             android:label="@string/device_id"
             android:theme="@style/FullscreenTheme" />
-        <activity android:name=".GroupListActivity" />
+        <activity android:name=".group.GroupListActivity" />
 
         <service
             android:name=".group.GroupService"

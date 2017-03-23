@@ -18,7 +18,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package at.usmile.cormorant.framework;
+package at.usmile.cormorant.framework.group;
 
 import android.content.ComponentName;
 import android.content.Context;
@@ -41,8 +41,7 @@ import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
 import com.google.zxing.qrcode.QRCodeWriter;
 
-import at.usmile.cormorant.framework.group.DialogPinShowActivity;
-import at.usmile.cormorant.framework.group.GroupService;
+import at.usmile.cormorant.framework.R;
 import at.usmile.cormorant.framework.messaging.MessagingService;
 
 import static at.usmile.cormorant.framework.group.GroupService.CHALLENGE_REQUEST_CANCELED;

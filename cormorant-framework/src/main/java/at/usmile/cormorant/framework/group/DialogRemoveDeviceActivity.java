@@ -29,7 +29,6 @@ import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 
-import at.usmile.cormorant.framework.GroupListActivity;
 import at.usmile.cormorant.framework.R;
 
 public class DialogRemoveDeviceActivity extends AppCompatActivity {

@@ -37,6 +37,8 @@ import android.view.MenuItem;
 import java.util.List;
 
 import at.usmile.cormorant.api.CormorantConstants;
+import at.usmile.cormorant.framework.group.BarcodeActivity;
+import at.usmile.cormorant.framework.group.GroupListActivity;
 import at.usmile.cormorant.framework.plugin.PluginManager;
 import at.usmile.cormorant.framework.ui.PluginDetailFragment;
 import at.usmile.cormorant.framework.ui.PluginListFragment;
