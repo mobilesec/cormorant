@@ -128,9 +128,6 @@ public class MainActivity extends AppCompatActivity implements PluginListFragmen
             case R.id.menuTrustedDevices:
                 startActivity(new Intent(this, GroupListActivity.class));
                 return true;
-            case R.id.menuAddDeviceToGroup:
-                startActivity(new Intent(this, BarcodeActivity.class));
-                return true;
             case R.id.menuRemovePlugins:
                 removeAllPlugins();
                 return true;

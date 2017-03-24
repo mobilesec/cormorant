@@ -7,10 +7,6 @@
         android:title="Trusted Devices"
         resauto:showAsAction="ifRoom" />
     <item
-        android:id="@+id/menuAddDeviceToGroup"
-        android:checkable="false"
-        android:title="@string/menu_add_device_to_group" />
-    <item
         android:id="@+id/menuRemovePlugins"
         android:title="@string/menu_remove_plugins_title" />
     <item

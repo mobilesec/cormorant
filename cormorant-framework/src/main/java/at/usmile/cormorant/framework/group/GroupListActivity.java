@@ -72,7 +72,7 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.menu, menu);
+        inflater.inflate(R.menu.group_menu, menu);
         return true;
     }
 
@@ -111,8 +111,8 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.menuTrustedDevices:
-                startActivity(new Intent(this, GroupListActivity.class));
+            case R.id.menuAddDeviceToGroup:
+                startActivity(new Intent(this, BarcodeActivity.class));
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -136,7 +136,6 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
         startActivity(intent);
     }
 
-    //TODO Better icon for device removal
     private void createArrayAdapter() {
         ArrayAdapter<TrustedDevice> adapter =
                 new ArrayAdapter<TrustedDevice>(
@@ -163,7 +162,6 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
                     }
 
                 };
-        // Bind to our new adapter.
         listview.setAdapter(adapter);
     }
 
