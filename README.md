@@ -23,9 +23,12 @@ dependencies {
 }
 ```
 
+# Architecture
+![framework architecture](cormorant-documentation/framework_architecture.svg)
+
 # Development
 
-Make sure to run ```./gradlew licenseFormat``` before commiting to ensure licence headers are correct (or else they break the build). 
+Make sure to run ```./gradlew licenseFormat``` before commiting to ensure licence headers are correct (or else they break the build).
 
 # Disclaimer
 
