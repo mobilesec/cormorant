@@ -24,7 +24,7 @@ dependencies {
 ```
 
 # Architecture
-![framework architecture](cormorant-documentation/framework_architecture.svg)
+![framework architecture](https://raw.githubusercontent.com/mobilesec/cormorant/develop/cormorant-documentation/framework_architecture.svg)
 
 # Development
 
