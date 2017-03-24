@@ -30,11 +30,13 @@ import android.content.Intent;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.PowerManager;
 import android.util.Log;
+import android.view.WindowManager;
 
 import org.jivesoftware.smack.chat2.Chat;
 
-import at.usmile.cormorant.framework.R;
+import at.usmile.cormorant.framework.AdminReceiver;
 import at.usmile.cormorant.framework.common.TypedServiceBinder;
 import at.usmile.cormorant.framework.common.TypedServiceConnection;
 import at.usmile.cormorant.framework.messaging.CormorantMessage;
@@ -45,9 +47,11 @@ public class LockService extends Service implements CormorantMessageConsumer {
 
     private final static String LOG_TAG = LockService.class.getSimpleName();
 
-    private KeyguardLock keyguardLock;
-
     private boolean locked = true;
+
+    private DevicePolicyManager devicePolicyManager;
+
+    private ComponentName adminReceiverComponent;
 
     private TypedServiceConnection<MessagingService> messagingService = new TypedServiceConnection<MessagingService>() {
         @Override
@@ -61,46 +65,65 @@ public class LockService extends Service implements CormorantMessageConsumer {
         }
     };
 
-
     @Override
     public void onCreate() {
         super.onCreate();
 
         bindService(new Intent(this, MessagingService.class), messagingService, Context.BIND_AUTO_CREATE);
+        devicePolicyManager = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
+        adminReceiverComponent = new ComponentName(this, AdminReceiver.class);
     }
 
     @Override
     public void onDestroy() {
         if (messagingService.isBound()) unbindService(messagingService);
 
-        getKeyguard().reenableKeyguard();
+        enableLock();
+
         super.onDestroy();
     }
 
-    // Reenable the keyguard. The keyguard will reappear if the previous call to disableKeyguard() caused it to be hidden.
-    // Note: This call has no effect while any DevicePolicyManager is enabled that requires a password.
     public synchronized void lock() {
         Log.d(LOG_TAG, "locking");
-        getKeyguard().reenableKeyguard();
+
+        enableLock();
+        devicePolicyManager.lockNow();
+
         locked = true;
         Log.d(LOG_TAG, "locked");
     }
 
-    // Might be this does in general not work with with Android >= 6...
-
     public synchronized void unlock() {
         Log.d(LOG_TAG, "unlocking");
-        getKeyguard().disableKeyguard();
+        disableLock();
         locked = false;
         Log.d(LOG_TAG, "unlocked");
     }
 
-    private synchronized KeyguardLock getKeyguard() {
-        if (keyguardLock == null) {
-            KeyguardManager keyguardManager = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
-            keyguardLock = keyguardManager.newKeyguardLock(LOG_TAG);
+    public void disableLock() {
+        // Set lockscreen to swipe-to-unlock
+        devicePolicyManager.setPasswordQuality(adminReceiverComponent, DevicePolicyManager.PASSWORD_QUALITY_UNSPECIFIED);
+        devicePolicyManager.setPasswordMinimumLength(adminReceiverComponent, 0);
+        boolean result = devicePolicyManager.resetPassword("", DevicePolicyManager.RESET_PASSWORD_REQUIRE_ENTRY);
+
+        if (result) {
+            Log.d(LOG_TAG, "Successfully Disabled PIN lock");
+        } else {
+            Log.d(LOG_TAG, "Could not disable PIN lock");
         }
-        return keyguardLock;
+    }
+
+    private void enableLock() {
+        devicePolicyManager.setPasswordQuality(adminReceiverComponent, DevicePolicyManager.PASSWORD_QUALITY_NUMERIC);
+        devicePolicyManager.setPasswordMinimumLength(adminReceiverComponent, 4);
+
+        // FIXME: Hardcoded for now, have user configure the pin later
+        boolean result = devicePolicyManager.resetPassword("1234", DevicePolicyManager.RESET_PASSWORD_REQUIRE_ENTRY);
+        if (result) {
+            Log.d(LOG_TAG, "Successfully enabled PIN lock");
+        } else {
+            Log.d(LOG_TAG, "Could not enabled PIN lock");
+        }
     }
 
     @Override
@@ -118,20 +141,11 @@ public class LockService extends Service implements CormorantMessageConsumer {
         Log.d(LOG_TAG, "handleMessage(" + cormorantMessage + ")");
 
         if (cormorantMessage instanceof DeviceLockCommand) {
-
-            Handler handler = new Handler(Looper.getMainLooper());
-
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    if (locked) {
-                        unlock();
-                    } else {
-                        lock();
-                    }
-                }
-            });
-
+            if (locked) {
+                unlock();
+            } else {
+                lock();
+            }
         }
 
     }
