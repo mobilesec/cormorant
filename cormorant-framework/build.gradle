@@ -41,5 +41,6 @@ dependencies {
     compile 'org.igniterealtime.smack:smack-extensions:4.2.0-rc3'
     compile 'com.google.code.gson:gson:2.8.0'
     compile 'com.journeyapps:zxing-android-embedded:3.4.0'
+    compile 'com.google.android.gms:play-services-nearby:9.0.0'
     testCompile 'junit:junit:4.12'
 }
