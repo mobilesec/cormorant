@@ -1,2 +1,14 @@
 at.usmile.cormorant.api
 at.usmile.cormorant.api.model
+at.usmile.cormorant.confidenceplugin
+at.usmile.cormorant.framework
+at.usmile.cormorant.framework.common
+at.usmile.cormorant.framework.group
+at.usmile.cormorant.framework.lock
+at.usmile.cormorant.framework.messaging
+at.usmile.cormorant.framework.module
+at.usmile.cormorant.framework.module.strategies
+at.usmile.cormorant.framework.plugin
+at.usmile.cormorant.framework.ui
+cormorant.usmile.at.riskplugin
+fhdw.locationriskplugin
