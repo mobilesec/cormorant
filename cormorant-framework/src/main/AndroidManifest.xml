@@ -18,7 +18,7 @@
 
         <meta-data
             android:name="com.google.android.nearby.messages.API_KEY"
-            android:value="#######################" />
+            android:value="" />
 
         <service
             android:name=".AuthenticationFrameworkService"
