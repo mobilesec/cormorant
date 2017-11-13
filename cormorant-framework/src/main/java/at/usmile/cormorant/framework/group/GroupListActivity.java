@@ -120,10 +120,13 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
     }
 
     public void lockOrUnlockDevice(View view) {
-        int position = listview.getPositionForView(view);
-        TrustedDevice deviceToLock = (TrustedDevice) listview.getItemAtPosition(position);
+        TrustedDevice deviceToLock = getDeviceFromGroupListView(view);
 
         messagingService.get().sendMessage(deviceToLock, new DeviceLockCommand());
+    }
+
+    public void removeDeviceAction(View view) {
+        removeDevice(getDeviceFromGroupListView(view));
     }
 
     public void removeDevice(TrustedDevice device) {
@@ -201,4 +204,9 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
             service.removeGroupChangeListener(GroupListActivity.this);
         }
     };
+
+    private TrustedDevice getDeviceFromGroupListView(View view) {
+        int position = listview.getPositionForView(view);
+        return (TrustedDevice) listview.getItemAtPosition(position);
+    }
 }

@@ -49,6 +49,16 @@
         android:layout_height="32dp"
         android:layout_margin="4dp"
         android:layout_weight="0"
+        android:onClick="removeDeviceAction"
+
+        app:srcCompat="@drawable/ic_clear_black_24dp" />
+
+    <ImageView
+        android:id="@+id/activity_group_list_lock_icon"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_margin="4dp"
+        android:layout_weight="0"
         android:onClick="lockOrUnlockDevice"
 
         app:srcCompat="@drawable/ic_lock_black_24dp" />
