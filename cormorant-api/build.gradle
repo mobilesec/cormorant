@@ -27,7 +27,6 @@ ext {
 
 android {
     compileSdkVersion global_compileSdkVersion
-    buildToolsVersion global_buildToolsVersion
 
     defaultConfig {
         minSdkVersion global_minSdkVersion
@@ -49,8 +48,8 @@ android {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile 'com.android.support:appcompat-v7:' + global_appCompatVersion
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'com.android.support:appcompat-v7:' + global_appCompatVersion
 }
 
 

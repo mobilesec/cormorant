@@ -2,7 +2,6 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion global_compileSdkVersion
-    buildToolsVersion global_buildToolsVersion
 
     defaultConfig {
         minSdkVersion global_minSdkVersion
@@ -27,8 +26,8 @@ android {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile 'com.android.support:appcompat-v7:' + global_appCompatVersion
-    compile project(':cormorant-api')
-    testCompile 'junit:junit:4.12'
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'com.android.support:appcompat-v7:' + global_appCompatVersion
+    implementation project(':cormorant-api')
+    testImplementation 'junit:junit:4.12'
 }

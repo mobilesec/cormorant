@@ -1,6 +1,5 @@
 include 'cormorant-framework'
 include 'cormorant-api'
 include 'cormorant-confidence-plugin'
-include 'cormorant-gait-plugin'
 include 'cormorant-risk-plugin'
 include 'cormorant-location-risk-plugin'

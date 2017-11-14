@@ -118,7 +118,7 @@ abstract class AbstractPluginService extends Service {
         //Check if there is a valid Framework installed
         if (!Utils.checkReadPluginDataPermission(logTag, this, frameworkComponent.getPackageName())) {
             Toast.makeText(this, "Can't bind to Framework: Service has not the required "
-                    + Manifest.permission.READ_PLUGIN_DATA + " permission", Toast.LENGTH_LONG).show();
+                    + "at.usmile.cormorant.permission.READ_PLUGIN_DATA" + " permission", Toast.LENGTH_LONG).show();
         }
         intent.setComponent(frameworkComponent);
         bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);

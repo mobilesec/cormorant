@@ -6,7 +6,6 @@ configurations {
 
 android {
     compileSdkVersion global_compileSdkVersion
-    buildToolsVersion global_buildToolsVersion
 
     defaultConfig {
         minSdkVersion global_minSdkVersion
@@ -33,14 +32,14 @@ android {
 
 
 dependencies {
-    compile project(':cormorant-api')
-    compile 'com.android.support:appcompat-v7:' + global_appCompatVersion
-    compile 'org.igniterealtime.smack:smack-android:4.2.0-rc3'
-    compile 'org.igniterealtime.smack:smack-android-extensions:4.2.0-rc3'
-    compile 'org.igniterealtime.smack:smack-tcp:4.2.0-rc3'
-    compile 'org.igniterealtime.smack:smack-extensions:4.2.0-rc3'
-    compile 'com.google.code.gson:gson:2.8.0'
-    compile 'com.journeyapps:zxing-android-embedded:3.4.0'
-    compile 'com.google.android.gms:play-services-nearby:9.0.0'
-    testCompile 'junit:junit:4.12'
+    implementation project(':cormorant-api')
+    implementation 'com.android.support:appcompat-v7:' + global_appCompatVersion
+    implementation 'org.igniterealtime.smack:smack-android:4.2.0-rc3'
+    implementation 'org.igniterealtime.smack:smack-android-extensions:4.2.0-rc3'
+    implementation 'org.igniterealtime.smack:smack-tcp:4.2.0-rc3'
+    implementation 'org.igniterealtime.smack:smack-extensions:4.2.0-rc3'
+    implementation 'com.google.code.gson:gson:2.8.0'
+    implementation 'com.journeyapps:zxing-android-embedded:3.4.0'
+    implementation 'com.google.android.gms:play-services-nearby:11.6.0'
+    testImplementation 'junit:junit:4.12'
 }
