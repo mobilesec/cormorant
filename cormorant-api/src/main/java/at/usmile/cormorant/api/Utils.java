@@ -29,11 +29,11 @@ import android.widget.Toast;
 public class Utils {
 
     public static boolean checkRegisterPermission(String logTag, Context context, String packageName){
-        return checkForPermission(logTag, context, packageName, "at.usmile.cormorant.permission.REGISTER_AUTH_PLUGIN");
+        return checkForPermission(logTag, context, packageName, Permissions.REGISTER_AUTH_PLUGIN);
     }
 
     public static boolean checkReadPluginDataPermission(String logTag, Context context, String packageName){
-        return checkForPermission(logTag, context, packageName, "at.usmile.cormorant.permission.READ_PLUGIN_DATA");
+        return checkForPermission(logTag, context, packageName, Permissions.READ_PLUGIN_DATA);
     }
 
     private static boolean checkForPermission(String logTag, Context context, String packageName, String permission){

@@ -76,7 +76,7 @@ abstract class AbstractPluginService extends Service {
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case CormorantConstants.MSG_POLL_DATA:
-                    Log.d(logTag, "Received pollrequest for data");
+                    Log.d(logTag, "Received poll request for data");
                     onDataUpdateRequest();
                     break;
                 default:
@@ -117,8 +117,8 @@ abstract class AbstractPluginService extends Service {
 
         //Check if there is a valid Framework installed
         if (!Utils.checkReadPluginDataPermission(logTag, this, frameworkComponent.getPackageName())) {
-            Toast.makeText(this, "Can't bind to Framework: Service has not the required "
-                    + "at.usmile.cormorant.permission.READ_PLUGIN_DATA" + " permission", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Can't bind to Framework: Service has not the required " + Permissions.READ_PLUGIN_DATA
+                    + " permission", Toast.LENGTH_LONG).show();
         }
         intent.setComponent(frameworkComponent);
         bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
