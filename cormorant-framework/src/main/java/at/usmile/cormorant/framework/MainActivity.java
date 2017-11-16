@@ -20,6 +20,7 @@
  */
 package at.usmile.cormorant.framework;
 
+import android.Manifest;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.content.Intent;
@@ -43,7 +44,7 @@ import com.google.android.gms.nearby.Nearby;
 import java.util.List;
 
 import at.usmile.cormorant.api.CormorantConstants;
-import at.usmile.cormorant.framework.group.BarcodeActivity;
+import at.usmile.cormorant.framework.common.PermissionHelper;
 import at.usmile.cormorant.framework.group.GroupListActivity;
 import at.usmile.cormorant.framework.plugin.PluginManager;
 import at.usmile.cormorant.framework.ui.PluginDetailFragment;
@@ -58,6 +59,7 @@ public class MainActivity extends AppCompatActivity implements PluginListFragmen
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        PermissionHelper.checkAndGetPermissions(this, Manifest.permission.ACCESS_FINE_LOCATION);
 
         startService(new Intent(this, AuthenticationFrameworkService.class));
         showMainFragment();

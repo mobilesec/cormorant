@@ -21,6 +21,8 @@
 package at.usmile.cormorant.framework.group;
 
 import android.app.Service;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.le.ScanResult;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -43,15 +45,19 @@ import java.lang.reflect.Type;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 
 import at.usmile.cormorant.framework.common.TypedServiceBinder;
 import at.usmile.cormorant.framework.common.TypedServiceConnection;
+import at.usmile.cormorant.framework.location.bluetooth.BeaconPublisher;
+import at.usmile.cormorant.framework.location.bluetooth.BeaconScanner;
+import at.usmile.cormorant.framework.location.bluetooth.DistanceHelper;
 import at.usmile.cormorant.framework.messaging.CormorantMessage;
 import at.usmile.cormorant.framework.messaging.CormorantMessageConsumer;
 import at.usmile.cormorant.framework.messaging.DeviceIdListener;
 import at.usmile.cormorant.framework.messaging.MessagingService;
 
-public class GroupService extends Service implements CormorantMessageConsumer, DeviceIdListener {
+public class GroupService extends Service implements CormorantMessageConsumer, DeviceIdListener, BeaconScanner.OnScanResultListener {
 
     public final static int CHALLENGE_REQUEST_CANCELED = -1;
     private final static int PIN_LENGTH = 4;
@@ -69,7 +75,8 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
     private GroupChallenge currentGroupChallenge;
     private List<TrustedDevice> group;
     private List<GroupChangeListener> groupChangeListeners = new LinkedList<>();
-
+    private BeaconScanner beaconScanner;
+    private BeaconPublisher beaconPublisher;
 
     public GroupService() {
     }
@@ -80,7 +87,15 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
         preferences = getSharedPreferences(PREFERENCE_NAME, Context.MODE_PRIVATE);
         initSelf();
         initGroup();
+        initLocationComponents();
         bindService(new Intent(this, MessagingService.class), messageService, Context.BIND_AUTO_CREATE);
+    }
+
+    private void initLocationComponents(){
+        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        this.beaconPublisher = new BeaconPublisher(bluetoothAdapter.getBluetoothLeAdvertiser());
+        this.beaconScanner = new BeaconScanner(bluetoothAdapter.getBluetoothLeScanner(),
+                getApplicationContext(), this);
     }
 
     @Override
@@ -89,6 +104,9 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
         messageService.get().removeMessageListener(CormorantMessage.TYPE.GROUP, this);
         messageService.get().removeDeviceIdListener(this);
         if (messageService.isBound()) unbindService(messageService);
+
+        beaconPublisher.stopBeacon();
+        beaconScanner.stopScanner();
     }
 
     public List<TrustedDevice> getGroup() {
@@ -115,12 +133,17 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
     public void setJabberId(String jabberId) {
         if (getSelf() == null) {
             this.self = new TrustedDevice(Build.MANUFACTURER, Build.MODEL, getScreenSize(),
-                    messageService.get().getDeviceID());
+                    messageService.get().getDeviceID(), UUID.randomUUID());
             saveSelf();
         }
         //TODO Raise expection if jabberId changed?
         else if (!getSelf().getJabberId().equals(jabberId)) Log.w(LOG_TAG, "JabberId changed!");
         if (group.isEmpty()) addTrustedDevice(self);
+
+        //TODO Let the user set a custom txPower value
+        //Start beacon here to ensure uuid is already set.
+        beaconPublisher.startBeacon(self.getUuid());
+        beaconScanner.startScanner();
     }
 
     public void addGroupChangeListener(GroupChangeListener groupChangeListener) {
@@ -318,4 +341,9 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
         }
     };
 
+    @Override
+    public void onResult(ScanResult result, DistanceHelper.DISTANCE distance, UUID uuid) {
+        //TODO Update group list
+        Log.d(LOG_TAG, String.format("Device is %s with uuid: %s", distance, uuid));
+    }
 }

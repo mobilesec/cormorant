@@ -20,6 +20,8 @@
  */
 package at.usmile.cormorant.framework.group;
 
+import java.util.UUID;
+
 public class TrustedDevice {
 
     private String id;
@@ -30,18 +32,21 @@ public class TrustedDevice {
 
     private String jabberId;
 
+    private UUID uuid;
+
     /*
     * Only to be used by the Group Service for group challenge and response.
     * */
     TrustedDevice(String jabberId) {
-        this(null, null, 0, jabberId);
+        this(null, null, 0, jabberId, null);
     }
 
-    public TrustedDevice(String id, String device, double screenSize, String jabberId) {
+    public TrustedDevice(String id, String device, double screenSize, String jabberId, UUID uuid) {
         this.id = id;
         this.device = device;
         this.screenSize = screenSize;
         this.jabberId = jabberId;
+        this.uuid = uuid;
     }
 
     public String getDevice() {
@@ -60,6 +65,10 @@ public class TrustedDevice {
         return jabberId;
     }
 
+    public UUID getUuid() {
+        return uuid;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -70,6 +79,7 @@ public class TrustedDevice {
         if (Double.compare(that.screenSize, screenSize) != 0) return false;
         if (!id.equals(that.id)) return false;
         if (!device.equals(that.device)) return false;
+        if (!uuid.equals(that.device)) return false;
         return jabberId.equals(that.jabberId);
 
     }
@@ -83,6 +93,7 @@ public class TrustedDevice {
         temp = Double.doubleToLongBits(screenSize);
         result = 31 * result + (int) (temp ^ (temp >>> 32));
         result = 31 * result + jabberId.hashCode();
+        result = 31 * result + uuid.hashCode();
         return result;
     }
 
@@ -93,6 +104,7 @@ public class TrustedDevice {
                 ", device='" + device + '\'' +
                 ", screenSize=" + screenSize +
                 ", jabberId='" + jabberId + '\'' +
+                ", uuid=" + uuid +
                 '}';
     }
 }
