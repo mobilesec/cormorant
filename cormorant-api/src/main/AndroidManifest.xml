@@ -7,7 +7,7 @@
         android:description="@string/register_auth_plugin_permission_description"
         android:icon="@mipmap/ic_launcher"
         android:label="Register Authentication Plugin"
-        android:protectionLevel="dangerous" />
+        android:protectionLevel="normal" />
 
     <permission
         android:name="at.usmile.cormorant.permission.READ_PLUGIN_DATA"
