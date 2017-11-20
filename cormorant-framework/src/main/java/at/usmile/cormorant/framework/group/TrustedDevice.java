@@ -20,7 +20,11 @@
  */
 package at.usmile.cormorant.framework.group;
 
+import android.location.Location;
+
 import java.util.UUID;
+
+import at.usmile.cormorant.framework.location.bluetooth.DistanceHelper;
 
 public class TrustedDevice {
 
@@ -33,6 +37,14 @@ public class TrustedDevice {
     private String jabberId;
 
     private UUID uuid;
+
+    private Location location;
+
+    //Distance in meters for GPS location
+    private double distanceToOtherDeviceGps;
+
+    //Fuzzy distance for bluetooth distance
+    private DistanceHelper.DISTANCE distanceToOtherDeviceBluetooth;
 
     /*
     * Only to be used by the Group Service for group challenge and response.
@@ -47,6 +59,8 @@ public class TrustedDevice {
         this.screenSize = screenSize;
         this.jabberId = jabberId;
         this.uuid = uuid;
+        this.distanceToOtherDeviceGps = -1;
+        this.distanceToOtherDeviceBluetooth = DistanceHelper.DISTANCE.UNKNOWN;
     }
 
     public String getDevice() {
@@ -69,6 +83,30 @@ public class TrustedDevice {
         return uuid;
     }
 
+    public Location getLocation() {
+        return location;
+    }
+
+    public double getDistanceToOtherDeviceGps() {
+        return distanceToOtherDeviceGps;
+    }
+
+    public DistanceHelper.DISTANCE getDistanceToOtherDeviceBluetooth() {
+        return distanceToOtherDeviceBluetooth;
+    }
+
+    public void setLocation(Location location) {
+        this.location = location;
+    }
+
+    public void setDistanceToOtherDeviceGps(double distanceToOtherDeviceGps) {
+        this.distanceToOtherDeviceGps = distanceToOtherDeviceGps;
+    }
+
+    public void setDistanceToOtherDeviceBluetooth(DistanceHelper.DISTANCE distanceToOtherDeviceBluetooth) {
+        this.distanceToOtherDeviceBluetooth = distanceToOtherDeviceBluetooth;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -79,7 +117,8 @@ public class TrustedDevice {
         if (Double.compare(that.screenSize, screenSize) != 0) return false;
         if (!id.equals(that.id)) return false;
         if (!device.equals(that.device)) return false;
-        if (!uuid.equals(that.device)) return false;
+        if (!uuid.equals(that.uuid)) return false;
+        if (!location.equals(that.location)) return false;
         return jabberId.equals(that.jabberId);
 
     }
@@ -92,8 +131,9 @@ public class TrustedDevice {
         result = 31 * result + device.hashCode();
         temp = Double.doubleToLongBits(screenSize);
         result = 31 * result + (int) (temp ^ (temp >>> 32));
-        result = 31 * result + jabberId.hashCode();
         result = 31 * result + uuid.hashCode();
+        result = 31 * result + location.hashCode();
+        result = 31 * result + jabberId.hashCode();
         return result;
     }
 
@@ -105,6 +145,9 @@ public class TrustedDevice {
                 ", screenSize=" + screenSize +
                 ", jabberId='" + jabberId + '\'' +
                 ", uuid=" + uuid +
+                ", location=" + location +
+                ", distanceToOtherDeviceGps=" + distanceToOtherDeviceGps +
+                ", distanceToOtherDeviceBluetooth=" + distanceToOtherDeviceBluetooth +
                 '}';
     }
 }

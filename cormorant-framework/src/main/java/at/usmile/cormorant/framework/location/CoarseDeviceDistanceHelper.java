@@ -1,0 +1,111 @@
+package at.usmile.cormorant.framework.location;
+
+import android.content.Context;
+import android.location.Location;
+import android.util.Log;
+
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
+import com.google.android.gms.location.LocationServices;
+
+import java.util.LinkedList;
+import java.util.List;
+
+import at.usmile.cormorant.framework.group.TrustedDevice;
+
+/**
+ * Created by fhdwsse
+ */
+
+public class CoarseDeviceDistanceHelper {
+    private FusedLocationProviderClient fusedLocationClient;
+
+    private final static String LOG_TAG = CoarseDeviceDistanceHelper.class.getSimpleName();
+    private LocationRequest locationRequest;
+    private LocationCallback locationCallback;
+    private List<CoarseDistanceListener> coarseDistanceListeners = new LinkedList<>();
+
+    public CoarseDeviceDistanceHelper(Context context) {
+        createLocationRequest();
+        createLocationCallback();
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(context);
+    }
+
+    public CoarseDeviceDistanceHelper(Context context, CoarseDistanceListener coarseDistanceListener) {
+        this(context);
+        addCoarseDistanceListener(coarseDistanceListener);
+    }
+
+    public void calculateDistances(List<TrustedDevice> deviceGroup, TrustedDevice self) {
+        deviceGroup.forEach(eachDevice -> {
+            eachDevice.setDistanceToOtherDeviceGps(calculateDeviceDistance(self, eachDevice));
+        });
+    }
+
+    public void subscribeToLocationUpdates() {
+        try {
+            fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null);
+        } catch (SecurityException e) {
+            Log.e(LOG_TAG, "Location permission not granted.", e);
+        }
+    }
+
+    public void unsubscribeFromLocationUpdates() {
+        fusedLocationClient.removeLocationUpdates(locationCallback);
+    }
+
+    public void getCurrentLocation() {
+        try {
+            fusedLocationClient.getLastLocation()
+                .addOnSuccessListener(
+                    location -> Log.d(LOG_TAG, "Current location: " + location))
+                .addOnFailureListener
+                    (error -> Log.w(LOG_TAG, "Current location could not be retrieved: " + error));
+        } catch (SecurityException e) {
+            Log.e(LOG_TAG, "Location permission not granted.", e);
+        }
+    }
+
+    //TODO set intervall to 1 minute
+    private void createLocationRequest(){
+        locationRequest = new LocationRequest();
+        locationRequest.setInterval(5000);
+        locationRequest.setFastestInterval(5000);
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+    }
+
+    private void createLocationCallback() {
+        locationCallback = new LocationCallback() {
+            @Override
+            public void onLocationResult(LocationResult locationResult) {
+                Log.v(LOG_TAG, "Location updated: " + locationResult.getLastLocation());
+                coarseDistanceListeners.forEach(eachListener -> eachListener.onLocationChanged(locationResult.getLastLocation()));
+            }
+        };
+    }
+
+    //Calculates distance between two devices in meters
+    public double calculateDeviceDistance(TrustedDevice deviceSelf, TrustedDevice deviceOther) {
+        Location locSelf = deviceSelf.getLocation();
+        Location locOther = deviceOther.getLocation();
+        float[] distanceInMeter = new float[1];
+        Location.distanceBetween(locSelf.getLatitude(), locSelf.getLongitude(),
+                locOther.getLatitude(), locOther.getLongitude(), distanceInMeter);
+        return Math.round(distanceInMeter[0]);
+    }
+
+    public interface CoarseDistanceListener {
+        public void onLocationChanged(Location location);
+    }
+
+    public void addCoarseDistanceListener(CoarseDistanceListener coarseDistanceListener) {
+        this.coarseDistanceListeners.add(coarseDistanceListener);
+    }
+
+    public void removeCoarseDistanceListener(CoarseDistanceListener coarseDistanceListener) {
+        this.coarseDistanceListeners.remove(coarseDistanceListener);
+    }
+
+}

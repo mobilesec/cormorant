@@ -26,6 +26,7 @@ import android.bluetooth.le.ScanResult;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.location.Location;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
@@ -49,6 +50,7 @@ import java.util.UUID;
 
 import at.usmile.cormorant.framework.common.TypedServiceBinder;
 import at.usmile.cormorant.framework.common.TypedServiceConnection;
+import at.usmile.cormorant.framework.location.CoarseDeviceDistanceHelper;
 import at.usmile.cormorant.framework.location.bluetooth.BeaconPublisher;
 import at.usmile.cormorant.framework.location.bluetooth.BeaconScanner;
 import at.usmile.cormorant.framework.location.bluetooth.DistanceHelper;
@@ -57,7 +59,9 @@ import at.usmile.cormorant.framework.messaging.CormorantMessageConsumer;
 import at.usmile.cormorant.framework.messaging.DeviceIdListener;
 import at.usmile.cormorant.framework.messaging.MessagingService;
 
-public class GroupService extends Service implements CormorantMessageConsumer, DeviceIdListener, BeaconScanner.OnScanResultListener {
+public class GroupService extends Service implements
+        CormorantMessageConsumer, DeviceIdListener, BeaconScanner.BeaconDistanceResultListener,
+        CoarseDeviceDistanceHelper.CoarseDistanceListener {
 
     public final static int CHALLENGE_REQUEST_CANCELED = -1;
     private final static int PIN_LENGTH = 4;
@@ -77,6 +81,7 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
     private List<GroupChangeListener> groupChangeListeners = new LinkedList<>();
     private BeaconScanner beaconScanner;
     private BeaconPublisher beaconPublisher;
+    private CoarseDeviceDistanceHelper coarseDeviceDistanceHelper;
 
     public GroupService() {
     }
@@ -93,9 +98,16 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
 
     private void initLocationComponents(){
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        this.beaconPublisher = new BeaconPublisher(bluetoothAdapter.getBluetoothLeAdvertiser());
-        this.beaconScanner = new BeaconScanner(bluetoothAdapter.getBluetoothLeScanner(),
-                getApplicationContext(), this);
+        if(bluetoothAdapter != null) {
+            this.beaconPublisher = new BeaconPublisher(bluetoothAdapter.getBluetoothLeAdvertiser());
+            this.beaconScanner = new BeaconScanner(bluetoothAdapter.getBluetoothLeScanner(),
+                    getApplicationContext(), this);
+        }
+        else {
+            Log.w(LOG_TAG, "Bluetooth for beacons not available");
+            Toast.makeText(this, "Bluetooth for beacons not available", Toast.LENGTH_SHORT).show();
+        }
+        coarseDeviceDistanceHelper = new CoarseDeviceDistanceHelper(this, this);
     }
 
     @Override
@@ -107,6 +119,8 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
 
         beaconPublisher.stopBeacon();
         beaconScanner.stopScanner();
+
+        coarseDeviceDistanceHelper.unsubscribeFromLocationUpdates();
     }
 
     public List<TrustedDevice> getGroup() {
@@ -144,6 +158,8 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
         //Start beacon here to ensure uuid is already set.
         beaconPublisher.startBeacon(self.getUuid());
         beaconScanner.startScanner();
+
+        coarseDeviceDistanceHelper.subscribeToLocationUpdates();
     }
 
     public void addGroupChangeListener(GroupChangeListener groupChangeListener) {
@@ -291,13 +307,8 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
 
     private void showToast(final String message) {
         Handler handler = new Handler(Looper.getMainLooper());
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                Toast.makeText(getApplicationContext(),
-                        message,
-                        Toast.LENGTH_LONG).show();
-            }
+        handler.post(() -> {
+            Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG).show();
         });
     }
 
@@ -343,7 +354,18 @@ public class GroupService extends Service implements CormorantMessageConsumer, D
 
     @Override
     public void onResult(ScanResult result, DistanceHelper.DISTANCE distance, UUID uuid) {
-        //TODO Update group list
         Log.d(LOG_TAG, String.format("Device is %s with uuid: %s", distance, uuid));
+        group.stream().filter(device -> device.getUuid().equals(uuid))
+                .findFirst()
+                .get()
+                .setDistanceToOtherDeviceBluetooth(distance);
+        notifyGroupChangeListeners();
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        self.setLocation(location);
+        coarseDeviceDistanceHelper.calculateDistances(group, self);
+        notifyGroupChangeListeners();
     }
 }

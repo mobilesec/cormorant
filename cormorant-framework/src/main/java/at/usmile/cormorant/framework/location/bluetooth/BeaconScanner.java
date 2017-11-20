@@ -27,13 +27,17 @@ import android.bluetooth.le.ScanRecord;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.Context;
+import android.os.CountDownTimer;
 import android.util.Log;
 import android.widget.Toast;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.TimerTask;
 import java.util.UUID;
 
 import at.usmile.cormorant.framework.location.bluetooth.DistanceHelper.DISTANCE;
@@ -46,10 +50,12 @@ public class BeaconScanner {
     private Context context;
     private BluetoothLeScanner bluetoothLeScanner;
     private ScanCallback scanCallback;
-    private List<OnScanResultListener> onScanResultListeners = new LinkedList<>();
+    private List<BeaconDistanceResultListener> beaconDistanceResultListeners = new LinkedList<>();
+    private Map<UUID, Integer> beaconTimeouts = new HashMap<>();
     private DistanceHelper distanceHelper = new DistanceHelper();
 
     private final static String LOG_TAG = BeaconPublisher.class.getSimpleName();
+    private final static int BEACON_TIMEOUT = 5 * 1000; //seconds * 1000
 
     public BeaconScanner(BluetoothLeScanner bluetoothLeScanner, Context context) {
         this.bluetoothLeScanner = bluetoothLeScanner;
@@ -57,9 +63,9 @@ public class BeaconScanner {
         this.context = context;
     }
 
-    public BeaconScanner(BluetoothLeScanner bluetoothLeScanner, Context context, OnScanResultListener onScanResultListener) {
+    public BeaconScanner(BluetoothLeScanner bluetoothLeScanner, Context context, BeaconDistanceResultListener beaconDistanceResultListener) {
         this(bluetoothLeScanner, context);
-        addOnScanResultListener(onScanResultListener);
+        addOnScanResultListener(beaconDistanceResultListener);
     }
 
     public void startScanner() {
@@ -126,6 +132,32 @@ public class BeaconScanner {
         };
     }
 
+    //TODO review this clunky timeout approach
+    private void createBeaconTimeout(UUID uuid) {
+        final Integer lastTick = beaconTimeouts.get(uuid);
+        if(lastTick == null){
+            beaconTimeouts.put(uuid, 1);
+            return;
+        }
+        else {
+            beaconTimeouts.put(uuid, lastTick + 1);
+        }
+
+        new CountDownTimer(BEACON_TIMEOUT, BEACON_TIMEOUT) {
+            public void onFinish() {
+                if((beaconTimeouts.get(uuid)-1) == lastTick || beaconTimeouts.get(uuid) == 1){
+                    Log.d(LOG_TAG, String.format("Beacon %s timed out", uuid));
+                    beaconDistanceResultListeners.forEach(eachListener ->
+                            eachListener.onResult(null, DISTANCE.UNKNOWN, uuid));
+                }
+            }
+
+            @Override
+            public void onTick(long l) {}
+        }.start();
+
+    }
+
     private void calcDistance(ScanResult result, byte[] manufacturerData) {
         int rssi = result.getRssi();
         int txPowerLevel = manufacturerData[22];
@@ -136,9 +168,11 @@ public class BeaconScanner {
         DISTANCE averagedDistance = distanceHelper.averageDistance(distance, uuid);
         if(averagedDistance == null) return;
 
-        for (OnScanResultListener eachOnScanResultListener : onScanResultListeners) {
-            eachOnScanResultListener.onResult(result, averagedDistance, uuid);
+        for (BeaconDistanceResultListener eachBeaconDistanceResultListener : beaconDistanceResultListeners) {
+            eachBeaconDistanceResultListener.onResult(result, averagedDistance, uuid);
         }
+
+        createBeaconTimeout(uuid);
     }
 
     private UUID getUuidFromManufacturerData(byte[] manufacturerData){
@@ -149,16 +183,16 @@ public class BeaconScanner {
         return UuidHelper.getUuidFromBytes(uuidAsBytes);
     }
 
-    public interface OnScanResultListener {
+    public interface BeaconDistanceResultListener {
         void onResult(ScanResult result, DISTANCE distance, UUID uuid);
     }
 
-    public void addOnScanResultListener(OnScanResultListener onScanResultListener) {
-        this.onScanResultListeners.add(onScanResultListener);
+    public void addOnScanResultListener(BeaconDistanceResultListener beaconDistanceResultListener) {
+        this.beaconDistanceResultListeners.add(beaconDistanceResultListener);
     }
 
-    public void removeOnScanResultListener(OnScanResultListener onScanResultListener) {
-        this.onScanResultListeners.remove(onScanResultListener);
+    public void removeOnScanResultListener(BeaconDistanceResultListener beaconDistanceResultListener) {
+        this.beaconDistanceResultListeners.remove(beaconDistanceResultListener);
     }
 
 }

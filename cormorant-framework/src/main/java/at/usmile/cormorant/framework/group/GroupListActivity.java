@@ -159,6 +159,8 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
 
                         ((TextView) view.findViewById(R.id.activity_group_list_text1)).setText(p.getId());
                         ((TextView) view.findViewById(R.id.activity_group_list_text2)).setText(p.getDevice());
+                        ((TextView) view.findViewById(R.id.activity_group_list_text3)).setText("GPS distance: " + p.getDistanceToOtherDeviceGps() + "m");
+                        ((TextView) view.findViewById(R.id.activity_group_list_text4)).setText("BT distance: " + p.getDistanceToOtherDeviceBluetooth());
                         ((ImageView) view.findViewById(R.id.activity_group_list_icon)).setImageResource(getIconByScreenSize(p.getScreenSize(), groupService.get().getSelf().equals(p)));
 
                         return view;
