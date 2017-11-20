@@ -22,10 +22,14 @@ buildscript {
 allprojects {
 
     apply plugin: 'license'
-   
+
     repositories {
         jcenter()
         google()
+        maven {
+            // For smack-omemo-4.2.1 - can't seem to find it some where else. Remove once available via standard repositories.
+            url 'https://oss.sonatype.org/content/repositories/snapshots'
+        }
     }
 
     tasks.whenTaskAdded  { task -> 
@@ -47,4 +51,5 @@ subprojects {
     ext.global_targetSdkVersion = 26
     ext.global_appCompatVersion = "27.0.0"
     ext.global_appSupportV4Version = "25.2.0"
+
 }

@@ -14,6 +14,7 @@ android {
         versionCode 1
         versionName "1.0"
         vectorDrawables.useSupportLibrary = true
+        multiDexEnabled true
     }
     buildTypes {
         release {
@@ -38,10 +39,10 @@ android {
 dependencies {
     implementation project(':cormorant-api')
     implementation 'com.android.support:appcompat-v7:' + global_appCompatVersion
-    implementation 'org.igniterealtime.smack:smack-android:4.2.0-rc3'
-    implementation 'org.igniterealtime.smack:smack-android-extensions:4.2.0-rc3'
-    implementation 'org.igniterealtime.smack:smack-tcp:4.2.0-rc3'
-    implementation 'org.igniterealtime.smack:smack-extensions:4.2.0-rc3'
+    implementation 'org.igniterealtime.smack:smack-android:4.2.1-SNAPSHOT'
+    implementation 'org.igniterealtime.smack:smack-android-extensions:4.2.1-SNAPSHOT'
+    implementation 'org.igniterealtime.smack:smack-tcp:4.2.1-SNAPSHOT'
+    implementation 'org.igniterealtime.smack:smack-extensions:4.2.1-SNAPSHOT'
     implementation 'com.google.code.gson:gson:2.8.0'
     implementation 'com.journeyapps:zxing-android-embedded:3.4.0'
     implementation 'com.google.android.gms:play-services-nearby:11.6.0'
