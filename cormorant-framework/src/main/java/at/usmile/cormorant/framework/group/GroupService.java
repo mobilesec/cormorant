@@ -94,6 +94,36 @@ public class GroupService extends Service implements
         initGroup();
         initLocationComponents();
         bindService(new Intent(this, MessagingService.class), messageService, Context.BIND_AUTO_CREATE);
+
+        //FIXME MESSAGING WORKAROUND
+        TrustedDevice selfDevice = new TrustedDevice("SelfId", "SelfDevice", 5, "selfId", UUID.fromString("a55e1589-d8c1-40b5-a399-5b07676a9c22"));
+        Location location = new Location("Bla");
+        location.setLatitude(51.731181);
+        location.setLongitude(8.736454);
+        selfDevice.setLocation(location);
+        this.self = selfDevice;
+
+        TrustedDevice otherDevice = new TrustedDevice("OtherId", "OtherDevice", 5, "jabberId", UUID.fromString("e55e1589-d8c1-40b5-a399-5b07676a9c22"));
+        location = new Location("Bla");
+        location.setLatitude(52.751181);
+        location.setLongitude(8.746454);
+        otherDevice.setLocation(location);
+
+        TrustedDevice otherDevice2 = new TrustedDevice("OtherId2", "OtherDevice2", 5, "jabberId", UUID.fromString("f55e1589-d8c1-40b5-a399-5b07676a9c22"));
+        location = new Location("Bla");
+        location.setLatitude(52.251181);
+        location.setLongitude(9.746454);
+        otherDevice2.setLocation(location);
+
+        group.clear();
+        addTrustedDevice(selfDevice);
+        addTrustedDevice(otherDevice);
+        addTrustedDevice(otherDevice2);
+
+        beaconScanner.startScanner();
+
+        coarseDeviceDistanceHelper.subscribeToLocationUpdates();
+        //FIXME MESSAGING WORKAROUND
     }
 
     private void initLocationComponents(){
@@ -281,7 +311,7 @@ public class GroupService extends Service implements
         Log.d(LOG_TAG, "Adding new trusted device: " + trustedDevice);
         group.add(trustedDevice);
         Log.d(LOG_TAG, "Active Group: " + group);
-        synchronizeGroupInfo();
+//        synchronizeGroupInfo(); //FIXME MESSAGING WORKAROUND
         notifyGroupChangeListeners();
     }
 

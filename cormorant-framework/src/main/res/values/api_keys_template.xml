@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+ 1. Copy and rename this file to api_keys.xml and add it to gitignore
+ 2. Remove "_template" from every name"
+ 3. Add your personal API keys
+ -->
+<resources>
+    <string name="api_key_google_maps_template"></string>
+</resources>

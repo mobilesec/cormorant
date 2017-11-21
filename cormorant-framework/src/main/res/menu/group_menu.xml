@@ -3,6 +3,12 @@
     xmlns:resauto="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:id="@+id/menuShowMap"
+        android:checkable="false"
+        android:icon="@drawable/ic_map_white_24dp"
+        android:title="@string/menu_add_device_to_group"
+        resauto:showAsAction="ifRoom" />
+    <item
         android:id="@+id/menuAddDeviceToGroup"
         android:checkable="false"
         android:icon="@drawable/ic_add_circle_outline_white_24dp"

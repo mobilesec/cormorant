@@ -1,17 +1,17 @@
 /**
  * Copyright 2016 - 2017
- *
+ * <p>
  * Daniel Hintze <daniel.hintze@fhdw.de>
  * Sebastian Scholz <sebastian.scholz@fhdw.de>
  * Rainhard D. Findling <rainhard.findling@fh-hagenberg.at>
  * Muhammad Muaaz <muhammad.muaaz@usmile.at>
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,6 +37,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import at.usmile.cormorant.framework.R;
+import at.usmile.cormorant.framework.common.CommonUtils;
 import at.usmile.cormorant.framework.common.TypedServiceConnection;
 import at.usmile.cormorant.framework.lock.DeviceLockCommand;
 import at.usmile.cormorant.framework.messaging.MessagingService;
@@ -46,6 +47,20 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
     public static TrustedDevice deviceToRemove;
 
     private ListView listview;
+    private TypedServiceConnection<MessagingService> messagingService = new TypedServiceConnection<>();
+    private TypedServiceConnection<GroupService> groupService = new TypedServiceConnection<GroupService>() {
+
+        @Override
+        public void onServiceConnected(GroupService service) {
+            createArrayAdapter();
+            service.addGroupChangeListener(GroupListActivity.this);
+        }
+
+        @Override
+        public void onServiceDisconnected(GroupService service) {
+            service.removeGroupChangeListener(GroupListActivity.this);
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -114,6 +129,9 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
             case R.id.menuAddDeviceToGroup:
                 startActivity(new Intent(this, BarcodeActivity.class));
                 return true;
+            case R.id.menuShowMap:
+                startActivity(new Intent(this, GroupMapActivity.class));
+                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -156,56 +174,28 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
 
                         TrustedDevice p = getItem(position);
 
+                        if(groupService.get().getSelf().equals(p)){
+                            ((TextView) view.findViewById(R.id.activity_group_list_text3)).setVisibility(View.GONE);
+                            ((TextView) view.findViewById(R.id.activity_group_list_text4)).setVisibility(View.GONE);
+                        }
 
                         ((TextView) view.findViewById(R.id.activity_group_list_text1)).setText(p.getId());
                         ((TextView) view.findViewById(R.id.activity_group_list_text2)).setText(p.getDevice());
                         ((TextView) view.findViewById(R.id.activity_group_list_text3)).setText("GPS distance: " + p.getDistanceToOtherDeviceGps() + "m");
                         ((TextView) view.findViewById(R.id.activity_group_list_text4)).setText("BT distance: " + p.getDistanceToOtherDeviceBluetooth());
-                        ((ImageView) view.findViewById(R.id.activity_group_list_icon)).setImageResource(getIconByScreenSize(p.getScreenSize(), groupService.get().getSelf().equals(p)));
+                        ((ImageView) view.findViewById(R.id.activity_group_list_icon)).setImageResource(
+                                CommonUtils.getIconByScreenSize(p.getScreenSize(), groupService.get().getSelf().equals(p)));
 
                         return view;
                     }
-
                 };
         listview.setAdapter(adapter);
     }
 
     @Override
     public void groupChanged() {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                ((ArrayAdapter) listview.getAdapter()).notifyDataSetChanged();
-            }
-        });
+        runOnUiThread(() -> ((ArrayAdapter) listview.getAdapter()).notifyDataSetChanged());
     }
-
-    private int getIconByScreenSize(double screenSize, boolean blue) {
-        if (screenSize >= 7) {
-            return blue ? R.drawable.ic_computer_blue_24dp : R.drawable.ic_computer_black_24dp;
-        }
-        if (screenSize < 3) {
-            return blue ? R.drawable.ic_watch_blue_24dp : R.drawable.ic_watch_black_24dp;
-        } else {
-            return blue ? R.drawable.ic_phone_android_blue_24dp : R.drawable.ic_phone_android_black_24dp;
-        }
-    }
-
-    private TypedServiceConnection<MessagingService> messagingService = new TypedServiceConnection<>();
-
-    private TypedServiceConnection<GroupService> groupService = new TypedServiceConnection<GroupService>() {
-
-        @Override
-        public void onServiceConnected(GroupService service) {
-            createArrayAdapter();
-            service.addGroupChangeListener(GroupListActivity.this);
-        }
-
-        @Override
-        public void onServiceDisconnected(GroupService service) {
-            service.removeGroupChangeListener(GroupListActivity.this);
-        }
-    };
 
     private TrustedDevice getDeviceFromGroupListView(View view) {
         int position = listview.getPositionForView(view);
