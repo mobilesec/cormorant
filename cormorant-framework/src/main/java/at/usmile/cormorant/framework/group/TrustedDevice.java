@@ -28,6 +28,8 @@ import at.usmile.cormorant.framework.location.bluetooth.DistanceHelper;
 
 public class TrustedDevice {
 
+    public static final int DEVICE_UNKNOWN_GPS_DISTANCE = -1;
+
     private String id;
 
     private String device;
@@ -59,7 +61,7 @@ public class TrustedDevice {
         this.screenSize = screenSize;
         this.jabberId = jabberId;
         this.uuid = uuid;
-        this.distanceToOtherDeviceGps = -1;
+        this.distanceToOtherDeviceGps = DEVICE_UNKNOWN_GPS_DISTANCE;
         this.distanceToOtherDeviceBluetooth = DistanceHelper.DISTANCE.UNKNOWN;
     }
 

@@ -39,6 +39,7 @@ import android.widget.TextView;
 import at.usmile.cormorant.framework.R;
 import at.usmile.cormorant.framework.common.CommonUtils;
 import at.usmile.cormorant.framework.common.TypedServiceConnection;
+import at.usmile.cormorant.framework.location.bluetooth.DistanceHelper;
 import at.usmile.cormorant.framework.lock.DeviceLockCommand;
 import at.usmile.cormorant.framework.messaging.MessagingService;
 
@@ -172,24 +173,43 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
                             view = getLayoutInflater().inflate(R.layout.activity_group_list_row, viewGroup, false);
                         }
 
-                        TrustedDevice p = getItem(position);
+                        TrustedDevice trustedDevice = getItem(position);
+                        double gpsDistance = Math.round(trustedDevice.getDistanceToOtherDeviceGps() / 100) / 10d;
 
-                        if(groupService.get().getSelf().equals(p)){
+                        ((TextView) view.findViewById(R.id.activity_group_list_text1)).setText(trustedDevice.getId());
+                        ((TextView) view.findViewById(R.id.activity_group_list_text2)).setText(trustedDevice.getDevice());
+                        ((TextView) view.findViewById(R.id.activity_group_list_text3)).setText(
+                                "GPS distance: " + gpsDistance + "km");
+                        ((TextView) view.findViewById(R.id.activity_group_list_text4)).setText("BT distance: " + trustedDevice.getDistanceToOtherDeviceBluetooth());
+                        ((TextView) view.findViewById(R.id.activity_group_list_text5)).setText("Distance: " + getDiscreteValue(trustedDevice, gpsDistance));
+                        ((ImageView) view.findViewById(R.id.activity_group_list_icon)).setImageResource(
+                                CommonUtils.getIconByScreenSize(trustedDevice.getScreenSize(), groupService.get().getSelf().equals(trustedDevice)));
+
+                        if(groupService.get().getSelf().equals(trustedDevice)){
                             ((TextView) view.findViewById(R.id.activity_group_list_text3)).setVisibility(View.GONE);
                             ((TextView) view.findViewById(R.id.activity_group_list_text4)).setVisibility(View.GONE);
+                            ((TextView) view.findViewById(R.id.activity_group_list_text5)).setVisibility(View.GONE);
                         }
-
-                        ((TextView) view.findViewById(R.id.activity_group_list_text1)).setText(p.getId());
-                        ((TextView) view.findViewById(R.id.activity_group_list_text2)).setText(p.getDevice());
-                        ((TextView) view.findViewById(R.id.activity_group_list_text3)).setText("GPS distance: " + p.getDistanceToOtherDeviceGps() + "m");
-                        ((TextView) view.findViewById(R.id.activity_group_list_text4)).setText("BT distance: " + p.getDistanceToOtherDeviceBluetooth());
-                        ((ImageView) view.findViewById(R.id.activity_group_list_icon)).setImageResource(
-                                CommonUtils.getIconByScreenSize(p.getScreenSize(), groupService.get().getSelf().equals(p)));
-
                         return view;
                     }
                 };
         listview.setAdapter(adapter);
+    }
+
+    private String getDiscreteValue(TrustedDevice trustedDevice, double gpsDistance) {
+        DistanceHelper.DISTANCE bleDistance = trustedDevice.getDistanceToOtherDeviceBluetooth();
+        String discreteValue = "UNKNOWN";
+        if(bleDistance != DistanceHelper.DISTANCE.UNKNOWN) discreteValue = bleDistance.name();
+        else if(gpsDistance > 0 && gpsDistance < 0.1) {
+            discreteValue = "< 100 m";
+        }
+        else if(gpsDistance >= 0.1 && gpsDistance < 5) {
+            discreteValue = "< 5 km";
+        }
+        else if(gpsDistance > 5) {
+            discreteValue = "> 5 km";
+        }
+        return discreteValue;
     }
 
     @Override

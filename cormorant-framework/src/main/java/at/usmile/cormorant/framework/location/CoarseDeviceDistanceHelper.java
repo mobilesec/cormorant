@@ -15,14 +15,17 @@ import java.util.List;
 
 import at.usmile.cormorant.framework.group.TrustedDevice;
 
+import static at.usmile.cormorant.framework.group.TrustedDevice.DEVICE_UNKNOWN_GPS_DISTANCE;
+
 /**
  * Created by fhdwsse
  */
 
 public class CoarseDeviceDistanceHelper {
-    private FusedLocationProviderClient fusedLocationClient;
-
+    public static final int GPS_UPDATE_INTERVAL = 1 * 60 * 1000; //1 minute between each gps pull
     private final static String LOG_TAG = CoarseDeviceDistanceHelper.class.getSimpleName();
+
+    private FusedLocationProviderClient fusedLocationClient;
     private LocationRequest locationRequest;
     private LocationCallback locationCallback;
     private List<CoarseDistanceListener> coarseDistanceListeners = new LinkedList<>();
@@ -71,8 +74,8 @@ public class CoarseDeviceDistanceHelper {
     //TODO set intervall to 1 minute
     private void createLocationRequest(){
         locationRequest = new LocationRequest();
-        locationRequest.setInterval(5000);
-        locationRequest.setFastestInterval(5000);
+        locationRequest.setInterval(GPS_UPDATE_INTERVAL);
+        locationRequest.setFastestInterval(GPS_UPDATE_INTERVAL);
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
     }
 
@@ -90,6 +93,10 @@ public class CoarseDeviceDistanceHelper {
     public double calculateDeviceDistance(TrustedDevice deviceSelf, TrustedDevice deviceOther) {
         Location locSelf = deviceSelf.getLocation();
         Location locOther = deviceOther.getLocation();
+        if(locSelf == null || locOther == null) {
+            Log.v(LOG_TAG, String.format("Distance to %s could not be calculated since location for one of the devices is not available.", deviceOther));
+            return DEVICE_UNKNOWN_GPS_DISTANCE;
+        }
         float[] distanceInMeter = new float[1];
         Location.distanceBetween(locSelf.getLatitude(), locSelf.getLongitude(),
                 locOther.getLatitude(), locOther.getLongitude(), distanceInMeter);
@@ -97,7 +104,7 @@ public class CoarseDeviceDistanceHelper {
     }
 
     public interface CoarseDistanceListener {
-        public void onLocationChanged(Location location);
+        void onLocationChanged(Location location);
     }
 
     public void addCoarseDistanceListener(CoarseDistanceListener coarseDistanceListener) {

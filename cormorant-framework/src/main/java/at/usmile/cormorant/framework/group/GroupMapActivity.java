@@ -35,8 +35,9 @@ import at.usmile.cormorant.framework.common.TypedServiceConnection;
 /**
  * Created by fhdwsse
  */
-public class GroupMapActivity extends AppCompatActivity implements OnMapReadyCallback, GroupChangeListener {
+public class GroupMapActivity extends AppCompatActivity implements OnMapReadyCallback {
     public static final double MAP_PADDING_FACTOR = 0.15;
+    private TypedServiceConnection<GroupService> groupService = new TypedServiceConnection<>();
     private GoogleMap googleMap;
 
     @Override
@@ -75,9 +76,10 @@ public class GroupMapActivity extends AppCompatActivity implements OnMapReadyCal
                     .position(new LatLng(deviceLoc.getLatitude(), deviceLoc.getLongitude()))
                     .icon(markerIcon)
                     .anchor(0.5f, 0.5f)
-                    .snippet(eachDevice.getDistanceToOtherDeviceGps() + "m")
+                    .snippet((eachDevice.getDistanceToOtherDeviceGps() / 100) / 10d + "km")
                     .title(eachDevice.getDevice()));
             createdMarkers.add(mapMarker);
+            mapMarker.showInfoWindow();
         });
         return createdMarkers;
     }
@@ -105,22 +107,4 @@ public class GroupMapActivity extends AppCompatActivity implements OnMapReadyCal
         return BitmapDescriptorFactory.fromBitmap(bitmap);
     }
 
-    private TypedServiceConnection<GroupService> groupService = new TypedServiceConnection<GroupService>() {
-
-        @Override
-        public void onServiceConnected(GroupService service) {
-            if(googleMap != null) setupMap(addMarkerForDevices(service.getGroup()));
-            service.addGroupChangeListener(GroupMapActivity.this);
-        }
-
-        @Override
-        public void onServiceDisconnected(GroupService service) {
-            service.removeGroupChangeListener(GroupMapActivity.this);
-        }
-    };
-
-    @Override
-    public void groupChanged() {
-        //TODO refresh Map
-    }
 }

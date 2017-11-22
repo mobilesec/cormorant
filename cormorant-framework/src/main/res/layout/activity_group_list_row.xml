@@ -49,6 +49,12 @@
             android:layout_height="wrap_content"
             android:text="Distance Bluetooth"
             android:textSize="16sp" />
+        <TextView
+            android:id="@+id/activity_group_list_text5"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Discrete Result"
+            android:textSize="16sp" />
     </LinearLayout>
 
     <Space

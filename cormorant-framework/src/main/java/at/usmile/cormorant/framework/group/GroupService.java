@@ -397,5 +397,6 @@ public class GroupService extends Service implements
         self.setLocation(location);
         coarseDeviceDistanceHelper.calculateDistances(group, self);
         notifyGroupChangeListeners();
+//        synchronizeGroupInfo(); //FIXME MESSAGING WORKAROUND
     }
 }
