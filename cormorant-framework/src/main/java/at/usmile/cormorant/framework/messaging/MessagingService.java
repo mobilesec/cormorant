@@ -30,7 +30,6 @@ import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
-import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
@@ -38,7 +37,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import org.jivesoftware.smack.AbstractXMPPConnection;
-import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.chat2.Chat;
 import org.jivesoftware.smack.chat2.ChatManager;
@@ -88,7 +86,9 @@ public class MessagingService extends Service implements IncomingChatMessageList
     private SharedPreferences prefs;
     private AbstractXMPPConnection connection;
 
-    private String host = "0nl1ne.cc";
+    // See https://github.com/ChatSecure/xmpp-server-list/blob/master/servers.json for alternative
+    // servers. Those should all feature In-Band registration (XEP-0077.
+    private String host = "home.zom.im";
     private String user;
     private String password;
 
@@ -102,6 +102,14 @@ public class MessagingService extends Service implements IncomingChatMessageList
     @Override
     public void onCreate() {
         Log.d(LOG_TAG, "MessagingService started");
+
+        try {
+            // Initialize key store
+            KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
+            ks.load(null, null);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         prefs = getSharedPreferences(PREFERENCE_NAME, Context.MODE_PRIVATE);
         registerReceiver(deviceConnectionReceiver, new IntentFilter(CONNECTIVITY_ACTION));
@@ -205,8 +213,9 @@ public class MessagingService extends Service implements IncomingChatMessageList
                         .setHost(host)
                         .setXmppDomain(host)
                         .setCompressionEnabled(false)
-                        .setCustomSSLContext(MessagingService.this.createSSLContext())
-                        .setSecurityMode(ConnectionConfiguration.SecurityMode.required)
+                        //.setCustomSSLContext(MessagingService.this.createSSLContext())
+                        //.setSecurityMode(ConnectionConfiguration.SecurityMode.required)
+                        .setKeystoreType(null)
                         .build();
 
                 connection = new XMPPTCPConnection(conf);
