@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- API Keys should NEVER be checked in since they would end up publicly on GitHub -->
+<resources>
+    <string name="api_key_google_maps">ADD_YOUR_PERSONAL_API_KEY_HERE</string>
+</resources>
