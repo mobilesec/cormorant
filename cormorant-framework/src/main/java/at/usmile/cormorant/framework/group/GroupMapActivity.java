@@ -51,6 +51,7 @@ import java.util.List;
 import at.usmile.cormorant.framework.R;
 import at.usmile.cormorant.framework.common.CommonUtils;
 import at.usmile.cormorant.framework.common.TypedServiceConnection;
+import at.usmile.cormorant.framework.location.SimpleLocation;
 
 /**
  * Created by fhdwsse
@@ -90,7 +91,9 @@ public class GroupMapActivity extends AppCompatActivity implements OnMapReadyCal
             int iconByScreenSize = CommonUtils.getIconByScreenSize(eachDevice.getScreenSize(),
                     groupService.get().getSelf().equals(eachDevice));
             BitmapDescriptor markerIcon = convertVectorToBitmap(iconByScreenSize);
-            Location deviceLoc = eachDevice.getLocation();
+            SimpleLocation deviceLoc = eachDevice.getLocation();
+
+            if(deviceLoc == null) return;
 
             Marker mapMarker = googleMap.addMarker(new MarkerOptions()
                     .position(new LatLng(deviceLoc.getLatitude(), deviceLoc.getLongitude()))
@@ -105,6 +108,8 @@ public class GroupMapActivity extends AppCompatActivity implements OnMapReadyCal
     }
 
     private void setupMap(List<Marker> markers) {
+        if(markers.isEmpty()) return;
+        
         LatLngBounds.Builder builder = new LatLngBounds.Builder();
         for (Marker marker : markers) {
             builder.include(marker.getPosition());

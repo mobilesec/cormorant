@@ -1,17 +1,17 @@
 /**
  * Copyright 2016 - 2017
- *
+ * <p>
  * Daniel Hintze <daniel.hintze@fhdw.de>
  * Sebastian Scholz <sebastian.scholz@fhdw.de>
  * Rainhard D. Findling <rainhard.findling@fh-hagenberg.at>
  * Muhammad Muaaz <muhammad.muaaz@usmile.at>
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,6 +25,7 @@ import android.location.Location;
 import java.util.Objects;
 import java.util.UUID;
 
+import at.usmile.cormorant.framework.location.SimpleLocation;
 import at.usmile.cormorant.framework.location.bluetooth.DistanceHelper;
 
 public class TrustedDevice {
@@ -41,7 +42,7 @@ public class TrustedDevice {
 
     private UUID uuid;
 
-    private Location location;
+    private SimpleLocation location;
 
     //Distance in meters for GPS location
     private double distanceToOtherDeviceGps;
@@ -86,24 +87,28 @@ public class TrustedDevice {
         return uuid;
     }
 
-    public Location getLocation() {
+    public SimpleLocation getLocation() {
         return location;
+    }
+
+    public void setLocation(SimpleLocation location) {
+        this.location = location;
+    }
+
+    public void setLocation(Location location) {
+        this.location = new SimpleLocation(location);
     }
 
     public double getDistanceToOtherDeviceGps() {
         return distanceToOtherDeviceGps;
     }
 
-    public DistanceHelper.DISTANCE getDistanceToOtherDeviceBluetooth() {
-        return distanceToOtherDeviceBluetooth;
-    }
-
-    public void setLocation(Location location) {
-        this.location = location;
-    }
-
     public void setDistanceToOtherDeviceGps(double distanceToOtherDeviceGps) {
         this.distanceToOtherDeviceGps = distanceToOtherDeviceGps;
+    }
+
+    public DistanceHelper.DISTANCE getDistanceToOtherDeviceBluetooth() {
+        return distanceToOtherDeviceBluetooth;
     }
 
     public void setDistanceToOtherDeviceBluetooth(DistanceHelper.DISTANCE distanceToOtherDeviceBluetooth) {

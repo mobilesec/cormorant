@@ -112,8 +112,8 @@ public class CoarseDeviceDistanceHelper {
 
     //Calculates distance between two devices in meters
     public double calculateDeviceDistance(TrustedDevice deviceSelf, TrustedDevice deviceOther) {
-        Location locSelf = deviceSelf.getLocation();
-        Location locOther = deviceOther.getLocation();
+        SimpleLocation locSelf = deviceSelf.getLocation();
+        SimpleLocation locOther = deviceOther.getLocation();
         if(locSelf == null || locOther == null) {
             Log.v(LOG_TAG, String.format("Distance to %s could not be calculated since location for one of the devices is not available.", deviceOther));
             return DEVICE_UNKNOWN_GPS_DISTANCE;
