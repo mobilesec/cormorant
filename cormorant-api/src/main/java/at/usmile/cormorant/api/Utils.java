@@ -28,15 +28,15 @@ import android.widget.Toast;
 
 public class Utils {
 
-    public static boolean checkRegisterPermission(String logTag, Context context, String packageName){
+    public static boolean checkRegisterPermission(String logTag, Context context, String packageName) {
         return checkForPermission(logTag, context, packageName, Permissions.REGISTER_AUTH_PLUGIN);
     }
 
-    public static boolean checkReadPluginDataPermission(String logTag, Context context, String packageName){
+    public static boolean checkReadPluginDataPermission(String logTag, Context context, String packageName) {
         return checkForPermission(logTag, context, packageName, Permissions.READ_PLUGIN_DATA);
     }
 
-    private static boolean checkForPermission(String logTag, Context context, String packageName, String permission){
+    private static boolean checkForPermission(String logTag, Context context, String packageName, String permission) {
         try {
             PackageInfo packageInfo = context.getPackageManager().getPackageInfo(packageName, PackageManager.GET_PERMISSIONS);
             if (packageInfo.requestedPermissions != null) {
@@ -46,10 +46,10 @@ public class Utils {
                     }
                 }
             }
-        }
-        catch (PackageManager.NameNotFoundException e) {
+        } catch (PackageManager.NameNotFoundException e) {
             Log.e(logTag, "Failed to load permissions, NameNotFound: " + e.getMessage());
         }
+
         Log.d(logTag, "Plugin " + packageName + " has not the required permissions to connect to the Authentication Framework");
         Toast.makeText(context, packageName + " has not the required permissions to connect to the Authentication Framework", Toast.LENGTH_LONG).show();
         return false;
