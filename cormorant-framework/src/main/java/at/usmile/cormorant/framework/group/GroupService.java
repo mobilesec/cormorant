@@ -120,7 +120,7 @@ public class GroupService extends Service implements
         addTrustedDevice(otherDevice);
         addTrustedDevice(otherDevice2);
 
-        beaconScanner.startScanner();
+        if(beaconScanner != null) beaconScanner.startScanner();
 
         coarseDeviceDistanceHelper.subscribeToLocationUpdates();
         //FIXME MESSAGING WORKAROUND
@@ -147,8 +147,8 @@ public class GroupService extends Service implements
         messageService.get().removeDeviceIdListener(this);
         if (messageService.isBound()) unbindService(messageService);
 
-        beaconPublisher.stopBeacon();
-        beaconScanner.stopScanner();
+        if(beaconPublisher != null)beaconPublisher.stopBeacon();
+        if(beaconScanner != null) beaconScanner.stopScanner();
 
         coarseDeviceDistanceHelper.unsubscribeFromLocationUpdates();
     }
@@ -186,8 +186,8 @@ public class GroupService extends Service implements
 
         //TODO Let the user set a custom txPower value
         //Start beacon here to ensure uuid is already set.
-        beaconPublisher.startBeacon(self.getUuid());
-        beaconScanner.startScanner();
+        if(beaconPublisher != null) beaconPublisher.startBeacon(self.getUuid());
+        if(beaconScanner != null) beaconScanner.startScanner();
 
         coarseDeviceDistanceHelper.subscribeToLocationUpdates();
     }
