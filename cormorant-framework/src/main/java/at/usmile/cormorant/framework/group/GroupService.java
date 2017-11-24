@@ -138,7 +138,7 @@ public class GroupService extends Service implements
 
     @Override
     public void handleMessage(CormorantMessage cormorantMessage, Chat chat) {
-        Log.d(LOG_TAG, "Handling Message:" + cormorantMessage);
+        Log.v(LOG_TAG, "Handling Message:" + cormorantMessage);
         if (cormorantMessage instanceof GroupChallengeRequest) {
             receiveChallengeRequest((GroupChallengeRequest) cormorantMessage, chat);
         } else if (cormorantMessage instanceof GroupChallengeResponse) {
@@ -234,7 +234,7 @@ public class GroupService extends Service implements
 
     //TODO Do real synchronisation + how to handle offline devices during sync?
     private void synchronizeGroupInfo() {
-        Log.d(LOG_TAG, "Synching new group: " + group);
+        Log.v(LOG_TAG, "Synching new group: " + group);
         for (TrustedDevice device : group) {
             if (!device.equals(self)) {
                 messageService.get().sendMessage(device, new GroupUpdateMessage(group));
@@ -249,19 +249,16 @@ public class GroupService extends Service implements
     }
 
     private void receiveGroupUpdate(GroupUpdateMessage groupUpdateMessage) {
-        Log.d(LOG_TAG, "Received GroupUpdateMessage: " + groupUpdateMessage);
+        Log.v(LOG_TAG, "Received GroupUpdateMessage: " + groupUpdateMessage);
         //device has been removed from group by other device
         if (!groupUpdateMessage.getGroup().contains(self)) {
             this.group.clear();
             this.group.add(self);
             showToast("Device has been removed from authentication group");
         } else {
-            int oldGroupCount = this.group.size();
             this.group.clear();
             this.group.addAll(groupUpdateMessage.getGroup());
-
-            showToast("Group has been refreshed - 1 device "
-                    + ((oldGroupCount - this.group.size() < 0) ? "added" : "removed"));
+            showToast("Group has been refreshed");
         }
         notifyGroupChangeListeners();
     }

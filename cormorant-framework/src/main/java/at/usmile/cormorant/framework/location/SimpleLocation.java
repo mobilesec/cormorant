@@ -27,4 +27,11 @@ public class SimpleLocation {
         return longitude;
     }
 
+    @Override
+    public String toString() {
+        return "SimpleLocation{" +
+                "latitude=" + latitude +
+                ", longitude=" + longitude +
+                '}';
+    }
 }
