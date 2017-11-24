@@ -30,7 +30,7 @@ import android.os.Bundle;
 import android.util.Log;
 
 import at.usmile.cormorant.api.CormorantConstants;
-import at.usmile.cormorant.api.Utils;
+import at.usmile.cormorant.api.PermissionUtil;
 
 /**
  * Removes plugins if they are uninstalled and starts plugins if they are installed.
@@ -57,7 +57,7 @@ public class PluginPackageChangeReceiver extends BroadcastReceiver {
             ComponentName serviceComponent = getStartupServiceComponent(context, packageName);
             if(serviceComponent != null){
                 Log.d(LOG_TAG, "Starting " + serviceComponent.getShortClassName());
-                if(!Utils.checkRegisterPermission(LOG_TAG, context, packageName)) return;
+                if(!PermissionUtil.checkRegisterPermission(LOG_TAG, context, packageName)) return;
                 Intent serviceIntent = new Intent();
                 serviceIntent.setComponent(serviceComponent);
                 context.startService(serviceIntent);

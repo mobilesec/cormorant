@@ -45,6 +45,10 @@
         <meta-data
             android:name="startupService"
             android:value="LocationRiskService" />
+
+        <activity
+            android:name="at.usmile.cormorant.api.PermissionUtil$PermissionRequestActivity" >
+        </activity>
     </application>
 
 </manifest>

@@ -116,7 +116,7 @@ abstract class AbstractPluginService extends Service {
                 CormorantConstants.CORMORANT_PACKAGE + CormorantConstants.CORMORANT_SERVICE);
 
         //Check if there is a valid Framework installed
-        if (!Utils.checkReadPluginDataPermission(logTag, this, frameworkComponent.getPackageName())) {
+        if (!PermissionUtil.checkReadPluginDataPermission(logTag, this, frameworkComponent.getPackageName())) {
             Toast.makeText(this, "Can't bind to Framework: Service has not the required " + Permissions.READ_PLUGIN_DATA
                     + " permission", Toast.LENGTH_LONG).show();
         }

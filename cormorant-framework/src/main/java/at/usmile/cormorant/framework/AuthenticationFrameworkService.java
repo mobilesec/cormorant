@@ -24,7 +24,6 @@ import android.app.Service;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
@@ -39,7 +38,7 @@ import android.util.Log;
 import java.util.List;
 
 import at.usmile.cormorant.api.CormorantConstants;
-import at.usmile.cormorant.api.Utils;
+import at.usmile.cormorant.api.PermissionUtil;
 import at.usmile.cormorant.api.model.StatusDataConfidence;
 import at.usmile.cormorant.api.model.StatusDataRisk;
 import at.usmile.cormorant.framework.common.TypedServiceConnection;
@@ -108,7 +107,7 @@ public class AuthenticationFrameworkService extends Service {
         PluginInfo api = new PluginInfo(msg.replyTo);
         setPluginMetaData(api, pluginComponentName);
 
-        if (pluginComponentName == null || !Utils.checkRegisterPermission(LOG_TAG, AuthenticationFrameworkService.this, pluginComponentName.getPackageName())) {
+        if (pluginComponentName == null || !PermissionUtil.checkRegisterPermission(LOG_TAG, AuthenticationFrameworkService.this, pluginComponentName.getPackageName())) {
             return;
         }
 
@@ -120,7 +119,7 @@ public class AuthenticationFrameworkService extends Service {
         dataBundle.setClassLoader(CormorantConstants.class.getClassLoader());
         ComponentName pluginComponent = dataBundle.getParcelable(CormorantConstants.KEY_COMPONENT_NAME);
 
-        if (pluginComponent == null || !Utils.checkRegisterPermission(LOG_TAG, AuthenticationFrameworkService.this, pluginComponent.getPackageName())) {
+        if (pluginComponent == null || !PermissionUtil.checkRegisterPermission(LOG_TAG, AuthenticationFrameworkService.this, pluginComponent.getPackageName())) {
             return;
         }
 
