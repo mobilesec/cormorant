@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="cormorant.usmile.at.riskplugin">
 
-    <uses-permission android:name="at.usmile.cormorant.REGISTER_AUTH_PLUGIN" />
+    <uses-permission android:name="at.usmile.cormorant.permission.REGISTER_AUTH_PLUGIN" />
 
     <application
         android:allowBackup="true"
