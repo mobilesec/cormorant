@@ -36,7 +36,10 @@ public class LocationRiskService extends AbstractRiskService {
     private Set<GenericCellIdentity> cells;
     private TelephonyManager telephonyManager;
 
-    public LocationRiskService() {
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
         this.telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
         this.cells = new HashSet<>();
     }
