@@ -362,8 +362,7 @@ public class GroupService extends Service implements
         Log.d(LOG_TAG, String.format("Device is %s with uuid: %s", distance, uuid));
         group.stream().filter(device -> device.getUuid().equals(uuid))
                 .findFirst()
-                .get()
-                .setDistanceToOtherDeviceBluetooth(distance);
+                .ifPresent(device -> device.setDistanceToOtherDeviceBluetooth(distance));
         notifyGroupChangeListeners();
     }
 
