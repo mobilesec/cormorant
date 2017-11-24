@@ -29,17 +29,11 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.nearby.Nearby;
 
 import java.util.List;
 
@@ -53,8 +47,6 @@ import at.usmile.cormorant.framework.ui.PluginListFragment;
 public class MainActivity extends AppCompatActivity implements PluginListFragment.PluginListFragmentCallbacks, PluginDetailFragment.PluginDetailFragmentCallbacks {
     private final static String LOG_TAG = MainActivity.class.getSimpleName();
 
-    private GoogleApiClient mGoogleApiClient;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -63,28 +55,6 @@ public class MainActivity extends AppCompatActivity implements PluginListFragmen
 
         startService(new Intent(this, AuthenticationFrameworkService.class));
         showMainFragment();
-
-        mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .addApi(Nearby.MESSAGES_API)
-                .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
-                    @Override
-                    public void onConnected(@Nullable Bundle bundle) {
-                     System.out.print("CORMORANT onConnected");
-                    }
-
-                    @Override
-                    public void onConnectionSuspended(int i) {
-                        System.out.print("CORMORANT onConnectionSuspended");
-
-                    }
-                })
-                .enableAutoManage(this, new GoogleApiClient.OnConnectionFailedListener() {
-                    @Override
-                    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-                        System.out.print("CORMORANT onConnectionFailed");
-                    }
-                })
-                .build();
     }
 
     private void switchFragment(Fragment fragment, String tag) {
