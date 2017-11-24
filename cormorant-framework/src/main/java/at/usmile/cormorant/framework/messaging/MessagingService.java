@@ -294,7 +294,7 @@ public class MessagingService extends Service implements IncomingChatMessageList
 
     private boolean connectToXMPP() {
         if (isDeviceConnected()) {
-//            new ConnectTask().execute(); //FIXME MESSAGING WORKAROUND
+            new ConnectTask().execute();
             return true;
         } else {
             Log.w(LOG_TAG, "Could not connect to XMPP Server, device is not connected to a network");

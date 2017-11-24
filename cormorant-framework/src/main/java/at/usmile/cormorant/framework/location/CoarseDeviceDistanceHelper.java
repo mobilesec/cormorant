@@ -22,6 +22,7 @@ package at.usmile.cormorant.framework.location;
 
 import android.content.Context;
 import android.location.Location;
+import android.os.Looper;
 import android.util.Log;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -69,7 +70,7 @@ public class CoarseDeviceDistanceHelper {
 
     public void subscribeToLocationUpdates() {
         try {
-            fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null);
+            fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
         } catch (SecurityException e) {
             Log.e(LOG_TAG, "Location permission not granted.", e);
         }

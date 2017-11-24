@@ -22,6 +22,8 @@ package at.usmile.cormorant.framework.group;
 
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.le.BluetoothLeAdvertiser;
+import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanResult;
 import android.content.Context;
 import android.content.Intent;
@@ -94,43 +96,16 @@ public class GroupService extends Service implements
         initGroup();
         initLocationComponents();
         bindService(new Intent(this, MessagingService.class), messageService, Context.BIND_AUTO_CREATE);
-
-        //FIXME MESSAGING WORKAROUND
-        TrustedDevice selfDevice = new TrustedDevice("SelfId", "SelfDevice", 5, "selfId", UUID.fromString("a55e1589-d8c1-40b5-a399-5b07676a9c22"));
-        Location location = new Location("Bla");
-        location.setLatitude(51.731181);
-        location.setLongitude(8.736454);
-        selfDevice.setLocation(location);
-        this.self = selfDevice;
-
-        TrustedDevice otherDevice = new TrustedDevice("OtherId", "OtherDevice", 5, "jabberId", UUID.fromString("e55e1589-d8c1-40b5-a399-5b07676a9c22"));
-        location = new Location("Bla");
-        location.setLatitude(52.751181);
-        location.setLongitude(8.746454);
-        otherDevice.setLocation(location);
-
-        TrustedDevice otherDevice2 = new TrustedDevice("OtherId2", "OtherDevice2", 5, "jabberId", UUID.fromString("f55e1589-d8c1-40b5-a399-5b07676a9c22"));
-        location = new Location("Bla");
-        location.setLatitude(52.251181);
-        location.setLongitude(9.746454);
-        otherDevice2.setLocation(location);
-
-        group.clear();
-        addTrustedDevice(selfDevice);
-        addTrustedDevice(otherDevice);
-        addTrustedDevice(otherDevice2);
-
-        if(beaconScanner != null) beaconScanner.startScanner();
-
-        coarseDeviceDistanceHelper.subscribeToLocationUpdates();
-        //FIXME MESSAGING WORKAROUND
     }
 
     private void initLocationComponents(){
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        if(bluetoothAdapter != null) {
-            this.beaconPublisher = new BeaconPublisher(bluetoothAdapter.getBluetoothLeAdvertiser());
-            this.beaconScanner = new BeaconScanner(bluetoothAdapter.getBluetoothLeScanner(),
+        BluetoothLeAdvertiser bluetoothLeAdvertiser = bluetoothAdapter.getBluetoothLeAdvertiser();
+        BluetoothLeScanner bluetoothLeScanner = bluetoothAdapter.getBluetoothLeScanner();
+
+        if(bluetoothAdapter != null && bluetoothLeAdvertiser != null && bluetoothLeScanner != null) {
+            this.beaconPublisher = new BeaconPublisher(bluetoothLeAdvertiser);
+            this.beaconScanner = new BeaconScanner(bluetoothLeScanner,
                     getApplicationContext(), this);
         }
         else {
@@ -150,7 +125,7 @@ public class GroupService extends Service implements
         if(beaconPublisher != null)beaconPublisher.stopBeacon();
         if(beaconScanner != null) beaconScanner.stopScanner();
 
-        coarseDeviceDistanceHelper.unsubscribeFromLocationUpdates();
+        if(coarseDeviceDistanceHelper != null) coarseDeviceDistanceHelper.unsubscribeFromLocationUpdates();
     }
 
     public List<TrustedDevice> getGroup() {
@@ -189,7 +164,7 @@ public class GroupService extends Service implements
         if(beaconPublisher != null) beaconPublisher.startBeacon(self.getUuid());
         if(beaconScanner != null) beaconScanner.startScanner();
 
-        coarseDeviceDistanceHelper.subscribeToLocationUpdates();
+        if(coarseDeviceDistanceHelper != null) coarseDeviceDistanceHelper.subscribeToLocationUpdates();
     }
 
     public void addGroupChangeListener(GroupChangeListener groupChangeListener) {
@@ -311,7 +286,7 @@ public class GroupService extends Service implements
         Log.d(LOG_TAG, "Adding new trusted device: " + trustedDevice);
         group.add(trustedDevice);
         Log.d(LOG_TAG, "Active Group: " + group);
-//        synchronizeGroupInfo(); //FIXME MESSAGING WORKAROUND
+        synchronizeGroupInfo();
         notifyGroupChangeListeners();
     }
 
@@ -397,6 +372,6 @@ public class GroupService extends Service implements
         self.setLocation(location);
         coarseDeviceDistanceHelper.calculateDistances(group, self);
         notifyGroupChangeListeners();
-//        synchronizeGroupInfo(); //FIXME MESSAGING WORKAROUND
+        synchronizeGroupInfo();
     }
 }

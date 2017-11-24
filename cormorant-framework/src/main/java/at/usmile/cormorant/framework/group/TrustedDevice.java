@@ -22,6 +22,7 @@ package at.usmile.cormorant.framework.group;
 
 import android.location.Location;
 
+import java.util.Objects;
 import java.util.UUID;
 
 import at.usmile.cormorant.framework.location.bluetooth.DistanceHelper;
@@ -113,30 +114,17 @@ public class TrustedDevice {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-
         TrustedDevice that = (TrustedDevice) o;
-
-        if (Double.compare(that.screenSize, screenSize) != 0) return false;
-        if (!id.equals(that.id)) return false;
-        if (!device.equals(that.device)) return false;
-        if (!uuid.equals(that.uuid)) return false;
-        if (!location.equals(that.location)) return false;
-        return jabberId.equals(that.jabberId);
-
+        return Double.compare(that.screenSize, screenSize) == 0 &&
+                Objects.equals(id, that.id) &&
+                Objects.equals(device, that.device) &&
+                Objects.equals(jabberId, that.jabberId) &&
+                Objects.equals(uuid, that.uuid);
     }
 
     @Override
     public int hashCode() {
-        int result;
-        long temp;
-        result = id.hashCode();
-        result = 31 * result + device.hashCode();
-        temp = Double.doubleToLongBits(screenSize);
-        result = 31 * result + (int) (temp ^ (temp >>> 32));
-        result = 31 * result + uuid.hashCode();
-        result = 31 * result + location.hashCode();
-        result = 31 * result + jabberId.hashCode();
-        return result;
+        return Objects.hash(id, device, screenSize, jabberId, uuid);
     }
 
     @Override
