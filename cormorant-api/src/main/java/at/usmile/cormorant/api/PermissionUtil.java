@@ -75,10 +75,10 @@ public class PermissionUtil {
         return false;
     }
 
-    public static void requestPermissions(final Context context, final OnRequestPermissionsResultCallback callback, String[] permissions, int requestCode,  int notificationIcon) {
+    public static void requestPermissions(final Context context, final OnRequestPermissionsResultCallback callback, int requestCode, int notificationIcon,  String... permissions) {
         ResultReceiver resultReceiver = new ResultReceiver(new Handler(Looper.getMainLooper())) {
             @Override
-            protected void onReceiveResult (int resultCode, Bundle resultData) {
+            protected void onReceiveResult(int resultCode, Bundle resultData) {
                 String[] outPermissions = resultData.getStringArray(KEY_PERMISSIONS);
                 int[] grantResults = resultData.getIntArray(KEY_GRANT_RESULTS);
                 callback.onRequestPermissionsResult(resultCode, outPermissions, grantResults);

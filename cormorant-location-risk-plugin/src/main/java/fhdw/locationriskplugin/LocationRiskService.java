@@ -20,28 +20,38 @@
  */
 package fhdw.locationriskplugin;
 
+import android.Manifest;
 import android.content.Context;
-import android.telephony.CellInfo;
-import android.telephony.TelephonyManager;
+import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
-import java.util.HashSet;
+import java.io.IOException;
 import java.util.List;
-import java.util.Set;
+import java.util.Locale;
 
 import at.usmile.cormorant.api.AbstractRiskService;
+import at.usmile.cormorant.api.PermissionUtil;
 import at.usmile.cormorant.api.model.StatusDataRisk;
 
-public class LocationRiskService extends AbstractRiskService {
-    private Set<GenericCellIdentity> cells;
-    private TelephonyManager telephonyManager;
+public class LocationRiskService extends AbstractRiskService implements LocationListener {
+    private LocationManager locationManager;
+    // private TelephonyManager telephonyManager;
 
     @Override
     public void onCreate() {
         super.onCreate();
 
-        this.telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-        this.cells = new HashSet<>();
+        // telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+        locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
     }
 
     @Override
@@ -49,11 +59,44 @@ public class LocationRiskService extends AbstractRiskService {
         publishRiskUpdate(new StatusDataRisk()
                 .status(StatusDataRisk.Status.OPERATIONAL)
                 .risk(0d));
-        saveCurrentCells();
+        updateMacroLocation();
+        // saveCurrentCells();
     }
 
-    private void saveCurrentCells(){
-        //onCellInfoChanged() use for location updateS?
+    private void updateMacroLocation() {
+        try {
+
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                Location lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+
+                Geocoder gcd = new Geocoder(this, Locale.getDefault());
+                List<Address> addresses = gcd.getFromLocation(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude(), 1);
+
+                if (addresses.size() > 0) {
+                    MacroLocationRiskLevel.getRiskLevelForCountry(addresses.get(0).getCountryCode());
+                }
+            } else {
+                PermissionUtil.requestPermissions(getApplicationContext(),
+                        new ActivityCompat.OnRequestPermissionsResultCallback() {
+                            @Override
+                            public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+                                Log.d("saveCurrentCells", "onRequestPermissionsResult");
+                            }
+                        },
+                        1,
+                        R.mipmap.ic_launcher, android.Manifest.permission.ACCESS_FINE_LOCATION);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void saveCurrentCells() {
+        Log.d("saveCurrentCells", "called");
+
+
+
+/*        //onCellInfoChanged() use for location updateS?
         //cid + lac (btw. tac bei lte) + mcc + mnc = (Global Cell ID)
         Log.d("cells", "Getting cells:");
         List<CellInfo> allCellInfo = telephonyManager.getAllCellInfo();
@@ -63,6 +106,22 @@ public class LocationRiskService extends AbstractRiskService {
         }
         for (GenericCellIdentity eachCell : cells) {
             Log.d("cells", eachCell.toString());
-        }
+        }*/
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+    }
+
+    @Override
+    public void onStatusChanged(String s, int i, Bundle bundle) {
+    }
+
+    @Override
+    public void onProviderEnabled(String s) {
+    }
+
+    @Override
+    public void onProviderDisabled(String s) {
     }
 }
