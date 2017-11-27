@@ -205,9 +205,6 @@ public class GroupService extends Service implements
             addTrustedDevice(groupChallengeResponse.getTrustedDevice());
             sendBroadcast(new Intent(DialogPinShowActivity.COMMAND_CLOSE));
             showToast("New device " + groupChallengeResponse.getTrustedDevice().getDevice() + " added successfully");
-            Intent intent = new Intent(this, GroupListActivity.class);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(intent);
         } else {
             sendBroadcast(new Intent(DialogPinShowActivity.COMMAND_PIN_FAILED));
         }

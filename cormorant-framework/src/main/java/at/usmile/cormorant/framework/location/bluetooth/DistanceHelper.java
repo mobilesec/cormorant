@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 
 public class DistanceHelper {
     private Map<UUID, List<DISTANCE>> distancesForUUIDMap = new HashMap<>();
-    private final static int AVERAGE_COUNT = 15;
+    private final static int AVERAGE_COUNT = 20;
 
     public double calculateAccuracy(int txPower, int rssi) {
         if (rssi == 0) {

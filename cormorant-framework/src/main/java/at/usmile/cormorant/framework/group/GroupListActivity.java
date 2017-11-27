@@ -87,6 +87,12 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        groupChanged();
+    }
+
+    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.group_menu, menu);
@@ -228,7 +234,7 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
 
     @Override
     public void groupChanged() {
-        runOnUiThread(() -> ((ArrayAdapter) listview.getAdapter()).notifyDataSetChanged());
+        if(groupService.isBound()) runOnUiThread(() -> createArrayAdapter());
     }
 
     private TrustedDevice getDeviceFromGroupListView(View view) {
