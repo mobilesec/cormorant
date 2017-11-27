@@ -20,10 +20,12 @@
  */
 package at.usmile.cormorant.framework.location;
 
+import android.Manifest;
 import android.content.Context;
 import android.location.Location;
 import android.os.Looper;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -34,6 +36,8 @@ import com.google.android.gms.location.LocationServices;
 import java.util.LinkedList;
 import java.util.List;
 
+import at.usmile.cormorant.api.PermissionUtil;
+import at.usmile.cormorant.framework.common.PermissionHelper;
 import at.usmile.cormorant.framework.group.TrustedDevice;
 
 import static at.usmile.cormorant.framework.group.TrustedDevice.DEVICE_UNKNOWN_GPS_DISTANCE;
@@ -49,9 +53,11 @@ public class CoarseDeviceDistanceHelper {
     private FusedLocationProviderClient fusedLocationClient;
     private LocationRequest locationRequest;
     private LocationCallback locationCallback;
+    private Context context;
     private List<CoarseDistanceListener> coarseDistanceListeners = new LinkedList<>();
 
     public CoarseDeviceDistanceHelper(Context context) {
+        this.context = context;
         createLocationRequest();
         createLocationCallback();
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(context);
@@ -70,7 +76,12 @@ public class CoarseDeviceDistanceHelper {
 
     public void subscribeToLocationUpdates() {
         try {
-            fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
+            if (PermissionHelper.hasPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)) {
+                fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
+            }
+            else {
+                Log.w(LOG_TAG, "Location permission not granted. GPS data won't be available");
+            }
         } catch (SecurityException e) {
             Log.e(LOG_TAG, "Location permission not granted.", e);
         }
