@@ -32,9 +32,11 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.text.TextUtils;
 import android.util.Log;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -44,23 +46,17 @@ import at.usmile.cormorant.api.model.StatusDataRisk;
 
 public class LocationRiskService extends AbstractRiskService implements LocationListener {
     private LocationManager locationManager;
-    // private TelephonyManager telephonyManager;
 
     @Override
     public void onCreate() {
         super.onCreate();
 
-        // telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
     }
 
     @Override
     protected void onDataUpdateRequest() {
-        publishRiskUpdate(new StatusDataRisk()
-                .status(StatusDataRisk.Status.OPERATIONAL)
-                .risk(0d));
         updateMacroLocation();
-        // saveCurrentCells();
     }
 
     private void updateMacroLocation() {
@@ -73,7 +69,21 @@ public class LocationRiskService extends AbstractRiskService implements Location
                 List<Address> addresses = gcd.getFromLocation(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude(), 1);
 
                 if (addresses.size() > 0) {
-                    MacroLocationRiskLevel.getRiskLevelForCountry(addresses.get(0).getCountryCode());
+                    Address currentAddress = addresses.get(0);
+                    Double macroRiskLevel = MacroLocationRiskLevel.getRiskLevelForCountry(currentAddress.getCountryCode());
+
+                    if (macroRiskLevel != null) {
+                        publishRiskUpdate(new StatusDataRisk()
+                                .status(StatusDataRisk.Status.OPERATIONAL)
+                                .risk(macroRiskLevel)
+                                .info(renderAddress(currentAddress)));
+                    } else {
+                        // We do not have macro risk information:
+                        publishRiskUpdate(new StatusDataRisk()
+                                .status(StatusDataRisk.Status.UNKNOWN)
+                                .risk(null));
+                    }
+
                 }
             } else {
                 PermissionUtil.requestPermissions(getApplicationContext(),
@@ -91,22 +101,14 @@ public class LocationRiskService extends AbstractRiskService implements Location
         }
     }
 
-    private void saveCurrentCells() {
-        Log.d("saveCurrentCells", "called");
+    private String renderAddress(Address address) {
+        ArrayList<String> addressFragments = new ArrayList<String>();
 
-
-
-/*        //onCellInfoChanged() use for location updateS?
-        //cid + lac (btw. tac bei lte) + mcc + mnc = (Global Cell ID)
-        Log.d("cells", "Getting cells:");
-        List<CellInfo> allCellInfo = telephonyManager.getAllCellInfo();
-        if(allCellInfo == null) return;
-        for (CellInfo eachCellInfo : allCellInfo) {
-            if (eachCellInfo.isRegistered()) cells.add(new GenericCellIdentity(eachCellInfo));
+        for (int i = 0; i <= address.getMaxAddressLineIndex(); i++) {
+            addressFragments.add(address.getAddressLine(i));
         }
-        for (GenericCellIdentity eachCell : cells) {
-            Log.d("cells", eachCell.toString());
-        }*/
+
+        return TextUtils.join(System.getProperty("line.separator"), addressFragments);
     }
 
     @Override

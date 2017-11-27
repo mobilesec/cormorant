@@ -24,12 +24,12 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 public class StatusDataRisk implements Parcelable {
-    public static final int PARCELABLE_VERSION = 1;
+    public static final int PARCELABLE_VERSION = 2;
 
     /**
      * The number of fields in this version of the parcelable.
      */
-    public static final int PARCELABLE_SIZE = 2;
+    public static final int PARCELABLE_SIZE = 3;
 
     public enum Status {
         TRAINING, OPERATIONAL, UNKNOWN
@@ -37,12 +37,22 @@ public class StatusDataRisk implements Parcelable {
 
     private Status status = Status.UNKNOWN;
     private double risk = 0.0;
+    private String info = null;
 
     public StatusDataRisk() {
     }
 
     public Status getStatus() {
         return status;
+    }
+
+    public String getInfo() {
+        return info;
+    }
+
+    public StatusDataRisk info(String info) {
+        this.info = info;
+        return this;
     }
 
     public StatusDataRisk status(Status status) {
@@ -58,6 +68,7 @@ public class StatusDataRisk implements Parcelable {
         this.risk = risk;
         return this;
     }
+
 
     /**
      * @see Parcelable
@@ -80,13 +91,15 @@ public class StatusDataRisk implements Parcelable {
             this.status = Status.valueOf(in.readString());
             this.risk = in.readDouble();
         }
+
         // Version 2 below
+        if (parcelableVersion >= 2) {
+            this.info = in.readString();
+        }
 
         // Skip any fields we don't know about. For example, if our current
-        // version's
-        // PARCELABLE_SIZE is 6 and the input parcelableSize is 12, skip the 6
-        // fields we
-        // haven't read yet (from above) since we don't know about them.
+        // version's PARCELABLE_SIZE is 6 and the input parcelableSize is 12, skip the 6
+        // fields we haven't read yet (from above) since we don't know about them.
         in.setDataPosition(in.dataPosition() + (PARCELABLE_SIZE - parcelableSize));
     }
 
@@ -104,6 +117,7 @@ public class StatusDataRisk implements Parcelable {
         parcel.writeDouble(risk);
 
         // Version 2 below
+        parcel.writeString(info);
     }
 
     @Override
@@ -112,25 +126,26 @@ public class StatusDataRisk implements Parcelable {
     }
 
     @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        long temp;
-        temp = Double.doubleToLongBits(risk);
-        result = prime * result + (int) (temp ^ (temp >>> 32));
-        result = prime * result + ((status == null) ? 0 : status.hashCode());
-        return result;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        StatusDataRisk that = (StatusDataRisk) o;
+
+        if (Double.compare(that.risk, risk) != 0) return false;
+        if (status != that.status) return false;
+        return info != null ? info.equals(that.info) : that.info == null;
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null) return false;
-        if (getClass() != obj.getClass()) return false;
-        StatusDataRisk other = (StatusDataRisk) obj;
-        if (Double.doubleToLongBits(risk) != Double.doubleToLongBits(other.risk)) return false;
-        if (status != other.status) return false;
-        return true;
+    public int hashCode() {
+        int result;
+        long temp;
+        result = status != null ? status.hashCode() : 0;
+        temp = Double.doubleToLongBits(risk);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
+        result = 31 * result + (info != null ? info.hashCode() : 0);
+        return result;
     }
 
     public void clean() {

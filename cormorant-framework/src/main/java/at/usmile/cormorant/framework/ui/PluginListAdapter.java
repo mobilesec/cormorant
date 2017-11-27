@@ -63,6 +63,8 @@ public class PluginListAdapter extends ArrayAdapter<PluginInfo> {
             rowValue.setText("Confidence: " + String.format("%.2f", pluginInfo.getStatusDataConfidence().getConfidence()));
         }
         else {
+            String info = pluginInfo.getStatusDataRisk().getInfo();
+            if(info != null) rowDesc.setText(info);
             rowValue.setText("Risk: " + String.format("%.2f", pluginInfo.getStatusDataRisk().getRisk()));
         }
 

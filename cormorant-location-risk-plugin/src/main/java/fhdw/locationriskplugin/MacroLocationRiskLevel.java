@@ -23,20 +23,31 @@ package fhdw.locationriskplugin;
 
 import android.util.Log;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class MacroLocationRiskLevel {
 
     private static final String LOG_TAG = MacroLocationRiskLevel.class.getSimpleName();
 
-    public static int getRiskLevelForCountry(String countryCode) {
-        Log.d(LOG_TAG, "computing macro location risk for " + countryCode);
+    public static Double getRiskLevelForCountry(String countryCode) {
+        if (!ROBBERIES.containsKey(countryCode)) {
+            Log.d(LOG_TAG, "no macro location risk information for country code " + countryCode);
+            return null;
+        }
 
-        return 0;
+        return (COUNTRIES_BY_FREQ_OF_ROBBERIES.indexOf(countryCode) + 1.0) / COUNTRIES_BY_FREQ_OF_ROBBERIES.size();
     }
 
+    // Reported robberies per 100.000 capita in 2014
+    // Source: https://data.unodc.org
     private static Map<String, Double> ROBBERIES = new HashMap<>();
+
+    private static List<String> COUNTRIES_BY_FREQ_OF_ROBBERIES = new ArrayList<>();
 
     static {
         ROBBERIES.put("MM", 0.18);		//Myanmar
@@ -128,6 +139,17 @@ public class MacroLocationRiskLevel {
         ROBBERIES.put("AD", 9.62);		//Andorra
         ROBBERIES.put("UG", 9.64);		//Uganda
         ROBBERIES.put("IT", 97.59);		//Italy
+
+        List<Map.Entry<String, Double>> entries = new ArrayList<>(ROBBERIES.entrySet());
+        Collections.sort(entries, new Comparator<Map.Entry<String, Double>>() {
+            public int compare(Map.Entry<String, Double> a, Map.Entry<String, Double> b) {
+                return Double.compare(a.getValue(), b.getValue());
+            }
+        });
+
+        for (Map.Entry<String, Double> entry : entries) {
+            COUNTRIES_BY_FREQ_OF_ROBBERIES.add(entry.getKey());
+        }
     }
 
 
