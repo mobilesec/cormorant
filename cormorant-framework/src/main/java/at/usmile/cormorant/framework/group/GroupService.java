@@ -45,6 +45,7 @@ import com.google.gson.reflect.TypeToken;
 import org.jivesoftware.smack.chat2.Chat;
 
 import java.lang.reflect.Type;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
@@ -92,8 +93,7 @@ public class GroupService extends Service implements
     public void onCreate() {
         Log.d(LOG_TAG, "GroupService started");
         preferences = getSharedPreferences(PREFERENCE_NAME, Context.MODE_PRIVATE);
-        initSelf();
-        initGroup();
+        initData();
         initLocationComponents();
         bindService(new Intent(this, MessagingService.class), messageService, Context.BIND_AUTO_CREATE);
     }
@@ -133,7 +133,7 @@ public class GroupService extends Service implements
     }
 
     public TrustedDevice getSelf() {
-        return self;
+        return this.self;
     }
 
     @Override
@@ -157,11 +157,11 @@ public class GroupService extends Service implements
         }
         //TODO Raise expection if jabberId changed?
         else if (!getSelf().getJabberId().equals(jabberId)) Log.w(LOG_TAG, "JabberId changed!");
-        if (group.isEmpty()) addTrustedDevice(self);
+        if (group.isEmpty()) addTrustedDevice(getSelf());
 
         //TODO Let the user set a custom txPower value
         //Start beacon here to ensure uuid is already set.
-        if(beaconPublisher != null) beaconPublisher.startBeacon(self.getUuid());
+        if(beaconPublisher != null) beaconPublisher.startBeacon(getSelf().getUuid());
         if(beaconScanner != null) beaconScanner.startScanner();
 
         if(coarseDeviceDistanceHelper != null) coarseDeviceDistanceHelper.subscribeToLocationUpdates();
@@ -194,7 +194,7 @@ public class GroupService extends Service implements
         Log.d(LOG_TAG, "Sending ChallengeRequest to " + deviceToTrust.getJabberId() + " with pin: " + pin);
 
         this.currentGroupChallenge = new GroupChallenge(pin, deviceToTrust.getJabberId());
-        GroupChallengeRequest groupChallengeRequest = new GroupChallengeRequest(self.getJabberId());
+        GroupChallengeRequest groupChallengeRequest = new GroupChallengeRequest(getSelf().getJabberId());
         messageService.get().sendMessage(deviceToTrust, groupChallengeRequest);
         return pin;
     }
@@ -227,7 +227,7 @@ public class GroupService extends Service implements
     public void respondToChallengeRequest(int pin, TrustedDevice challengingDevice) {
         Log.d(LOG_TAG, "Responding to Challenge " + currentGroupChallenge);
         messageService.get().sendMessage(challengingDevice, new GroupChallengeResponse(
-                self,
+                getSelf(),
                 pin));
     }
     //<-- DEVICE B
@@ -236,7 +236,7 @@ public class GroupService extends Service implements
     private void synchronizeGroupInfo() {
         Log.v(LOG_TAG, "Synching new group: " + group);
         for (TrustedDevice device : group) {
-            if (!device.equals(self)) {
+            if (!device.equals(getSelf())) {
                 messageService.get().sendMessage(device, new GroupUpdateMessage(group));
             }
         }
@@ -251,9 +251,9 @@ public class GroupService extends Service implements
     private void receiveGroupUpdate(GroupUpdateMessage groupUpdateMessage) {
         Log.v(LOG_TAG, "Received GroupUpdateMessage: " + groupUpdateMessage);
         //device has been removed from group by other device
-        if (!groupUpdateMessage.getGroup().contains(self)) {
+        if (!groupUpdateMessage.getGroup().contains(getSelf())) {
             this.group.clear();
-            this.group.add(self);
+            this.group.add(getSelf());
             showToast("Device has been removed from authentication group");
         } else {
             this.group.clear();
@@ -266,11 +266,11 @@ public class GroupService extends Service implements
     public void removeTrustedDevice(TrustedDevice deviceToRemove) {
         Log.d(LOG_TAG, "Removing device: " + deviceToRemove);
         //TODO create new key
-        if (deviceToRemove.equals(self)) {
-            this.group.remove(self);
+        if (deviceToRemove.equals(getSelf())) {
+            this.group.remove(getSelf());
             synchronizeGroupInfo();
             this.group.clear();
-            this.group.add(self);
+            this.group.add(getSelf());
         } else {
             this.group.remove(deviceToRemove);
             synchronizeGroupInfo(deviceToRemove);
@@ -314,6 +314,12 @@ public class GroupService extends Service implements
         });
     }
 
+    private void initData() {
+        //fixed order
+        initSelf();
+        initGroup();
+    }
+
     private void saveGroup() {
         preferences.edit().putString(PREF_GROUP_LIST, gson.toJson(getGroup())).apply();
     }
@@ -325,6 +331,8 @@ public class GroupService extends Service implements
             Type groupListType = new TypeToken<LinkedList<TrustedDevice>>() {
             }.getType();
             this.group = gson.fromJson(groupJson, groupListType);
+            //rebind list and self object after json import
+            Collections.replaceAll(this.group, getSelf(), getSelf());
         }
     }
 
@@ -365,8 +373,9 @@ public class GroupService extends Service implements
 
     @Override
     public void onLocationChanged(Location location) {
-        self.setLocation(location);
-        coarseDeviceDistanceHelper.calculateDistances(group, self);
+        getSelf().setLocation(location);
+        coarseDeviceDistanceHelper.calculateDistances(group, getSelf());
+
         notifyGroupChangeListeners();
         synchronizeGroupInfo();
     }
