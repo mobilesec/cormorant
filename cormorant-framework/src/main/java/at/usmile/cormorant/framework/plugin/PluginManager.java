@@ -42,7 +42,7 @@ public class PluginManager {
     private final static String LOG_TAG = PluginManager.class.getSimpleName();
     private static PluginManager instance;
 
-    private List<OnChangeListener> onChangeListeners = new LinkedList<>();
+    private List<PluginChangeListener> pluginChangeListeners = new LinkedList<>();
     private List<PluginInfo> pluginList = new ArrayList<>(); //TODO persistence required?
 
     public static PluginManager getInstance() {
@@ -95,12 +95,12 @@ public class PluginManager {
         return Collections.unmodifiableList(pluginList);
     }
 
-    public void addOnChangeListener(OnChangeListener listener) {
-        onChangeListeners.add(listener);
+    public void addPluginChangeListener(PluginChangeListener listener) {
+        pluginChangeListeners.add(listener);
     }
 
-    public void removeOnChangeListener(OnChangeListener listener) {
-        onChangeListeners.remove(listener);
+    public void removePluginChangeListener(PluginChangeListener listener) {
+        pluginChangeListeners.remove(listener);
     }
 
     public void pollDataFromPlugins(){
@@ -116,12 +116,13 @@ public class PluginManager {
     }
 
     private void notifyOnChangeListeners(){
-        for (OnChangeListener eachOnChangeListener : onChangeListeners) {
-            eachOnChangeListener.onPluginsChanged();
+        for (PluginChangeListener eachPluginChangeListener : pluginChangeListeners) {
+            eachPluginChangeListener.onPluginsChanged();
         }
     }
 
-    public static interface OnChangeListener {
+    public static interface PluginChangeListener {
         void onPluginsChanged();
     }
+
 }

@@ -34,7 +34,7 @@ import at.usmile.cormorant.framework.plugin.PluginManager;
  * If a plugin has changed it will trigger the FusionModule.
  * The decision making process is started from the FusionModule after the data has been fused.
  */
-public class DecisionModule implements PluginManager.OnChangeListener {
+public class DecisionModule implements PluginManager.PluginChangeListener {
     public static final String LOG_TAG = DecisionModule.class.getSimpleName();
     private DecisionStrategy decisionStrategy;
     private FusionModule fusionModule;

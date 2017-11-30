@@ -141,7 +141,7 @@ public class AuthenticationFrameworkService extends Service {
                 new DecisionStrategyDefault(),
                 new FusionStrategyConfidenceDefault(),
                 new FusionStrategyRiskDefault());
-        PluginManager.getInstance().addOnChangeListener(decisionModule);
+        PluginManager.getInstance().addPluginChangeListener(decisionModule);
         decisionModule.start();
     }
 

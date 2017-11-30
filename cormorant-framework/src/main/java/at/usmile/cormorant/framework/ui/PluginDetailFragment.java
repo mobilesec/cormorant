@@ -39,7 +39,7 @@ import at.usmile.cormorant.framework.plugin.PluginInfo;
 import at.usmile.cormorant.framework.plugin.PluginManager;
 import at.usmile.cormorant.framework.R;
 
-public class PluginDetailFragment extends Fragment implements View.OnClickListener, PluginManager.OnChangeListener {
+public class PluginDetailFragment extends Fragment implements View.OnClickListener, PluginManager.PluginChangeListener {
     private final static String ARG_PLUGIN_PACKAGE = "arg_plugin_package";
 
     private PluginDetailFragmentCallbacks callbacks;
@@ -153,13 +153,13 @@ public class PluginDetailFragment extends Fragment implements View.OnClickListen
     public void onResume() {
         super.onResume();
         setDetails();
-        PluginManager.getInstance().addOnChangeListener(this);
+        PluginManager.getInstance().addPluginChangeListener(this);
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        PluginManager.getInstance().removeOnChangeListener(this);
+        PluginManager.getInstance().removePluginChangeListener(this);
     }
 
     @Override

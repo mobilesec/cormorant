@@ -32,7 +32,7 @@ import android.widget.ListView;
 import at.usmile.cormorant.framework.plugin.PluginManager;
 import at.usmile.cormorant.framework.R;
 
-public class PluginListFragment extends Fragment implements PluginManager.OnChangeListener {
+public class PluginListFragment extends Fragment implements PluginManager.PluginChangeListener {
     private ListView listView;
     private PluginListFragmentCallbacks callbacks;
 
@@ -78,7 +78,7 @@ public class PluginListFragment extends Fragment implements PluginManager.OnChan
     @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);
-        PluginManager.getInstance().addOnChangeListener(this);
+        PluginManager.getInstance().addPluginChangeListener(this);
         try {
             callbacks = (PluginListFragmentCallbacks) activity;
         } catch (ClassCastException e) {
@@ -89,7 +89,7 @@ public class PluginListFragment extends Fragment implements PluginManager.OnChan
     @Override
     public void onDetach() {
         super.onDetach();
-        PluginManager.getInstance().removeOnChangeListener(this);
+        PluginManager.getInstance().removePluginChangeListener(this);
         callbacks = null;
     }
 }
