@@ -22,6 +22,8 @@ package at.usmile.cormorant.framework.location;
 
 import android.Manifest;
 import android.content.Context;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.os.Looper;
 import android.util.Log;
@@ -33,8 +35,10 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 
 import at.usmile.cormorant.api.PermissionUtil;
 import at.usmile.cormorant.framework.common.PermissionHelper;
@@ -115,8 +119,9 @@ public class CoarseDeviceDistanceHelper {
         locationCallback = new LocationCallback() {
             @Override
             public void onLocationResult(LocationResult locationResult) {
-                Log.v(LOG_TAG, "Location updated: " + locationResult.getLastLocation());
-                coarseDistanceListeners.forEach(eachListener -> eachListener.onLocationChanged(locationResult.getLastLocation()));
+                Location location = locationResult.getLastLocation();
+                Log.v(LOG_TAG, "Location updated: " + location);
+                coarseDistanceListeners.forEach(eachListener -> eachListener.onLocationChanged(location));
             }
         };
     }

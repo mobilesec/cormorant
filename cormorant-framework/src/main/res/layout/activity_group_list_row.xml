@@ -55,6 +55,12 @@
             android:layout_height="wrap_content"
             android:text="Discrete Result"
             android:textSize="16sp" />
+        <TextView
+            android:id="@+id/activity_group_list_text6"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Address"
+            android:textSize="16sp" />
     </LinearLayout>
 
     <Space

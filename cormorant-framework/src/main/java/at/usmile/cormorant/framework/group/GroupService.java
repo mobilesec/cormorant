@@ -28,6 +28,8 @@ import android.bluetooth.le.ScanResult;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.os.Build;
 import android.os.Handler;
@@ -44,10 +46,12 @@ import com.google.gson.reflect.TypeToken;
 
 import org.jivesoftware.smack.chat2.Chat;
 
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Random;
 import java.util.UUID;
 
@@ -388,6 +392,21 @@ public class GroupService extends Service implements
     public void onLocationChanged(Location location) {
         getSelf().setLocation(location);
         coarseDeviceDistanceHelper.calculateDistances(group, getSelf());
+
+        try {
+            //TODO Might have a bad performance impact
+            Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+            List<Address> addresses = geocoder.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
+            if(addresses != null && !addresses.isEmpty()) {
+                Address address = addresses.get(0);
+                getSelf().getLocation().setAddress(address.getAddressLine(0));
+            }
+            else {
+                getSelf().getLocation().setAddress("Address: UNKNOWN");
+            }
+        } catch (IOException e) {
+            Log.e(LOG_TAG, "Couldn't get address for location.", e);
+        }
 
         notifyGroupChangeListeners();
         synchronizeGroupInfo();

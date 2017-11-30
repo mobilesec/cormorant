@@ -22,6 +22,8 @@ package at.usmile.cormorant.framework.location;
 
 import android.location.Location;
 
+import java.util.Objects;
+
 /**
  * Created by fhdwsse
  */
@@ -29,6 +31,7 @@ import android.location.Location;
 public class SimpleLocation {
     double latitude;
     double longitude;
+    String address;
 
     public SimpleLocation(double latitude, double longitude) {
         this.latitude = latitude;
@@ -47,11 +50,34 @@ public class SimpleLocation {
         return longitude;
     }
 
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SimpleLocation that = (SimpleLocation) o;
+        return Double.compare(that.latitude, latitude) == 0 &&
+                Double.compare(that.longitude, longitude) == 0;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(latitude, longitude);
+    }
+
     @Override
     public String toString() {
         return "SimpleLocation{" +
                 "latitude=" + latitude +
                 ", longitude=" + longitude +
+                ", address='" + address + '\'' +
                 '}';
     }
 }
