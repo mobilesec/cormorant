@@ -20,9 +20,11 @@
  */
 package at.usmile.cormorant.framework.group;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.view.ContextMenu;
 import android.view.Menu;
@@ -46,7 +48,7 @@ import at.usmile.cormorant.framework.messaging.MessagingService;
 
 public class GroupListActivity extends AppCompatActivity implements GroupChangeListener {
 
-    public static TrustedDevice deviceToRemove;
+    public static TrustedDevice selectedDevice;
 
     private ListView listview;
     private TypedServiceConnection<MessagingService> messagingService = new TypedServiceConnection<>();
@@ -76,6 +78,7 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
         listview = (ListView) findViewById(R.id.group_list_view);
 
         registerForContextMenu(listview);
+        setOnClickForItems();
     }
 
     @Override
@@ -145,6 +148,14 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
         }
     }
 
+    private void setOnClickForItems() {
+        listview.setOnItemClickListener((parent, view, position, id) -> {
+            selectedDevice = (TrustedDevice) parent.getItemAtPosition(position);
+            Intent intent = new Intent(GroupListActivity.this, GroupPluginsActivity.class);
+            startActivity(intent);
+        });
+    }
+
     public void lockOrUnlockDevice(View view) {
         TrustedDevice deviceToLock = getDeviceFromGroupListView(view);
 
@@ -156,7 +167,7 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
     }
 
     public void removeDevice(TrustedDevice device) {
-        deviceToRemove = device;
+        selectedDevice = device;
         showRemoveDeviceDialog();
     }
 
@@ -170,7 +181,6 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
                 new ArrayAdapter<TrustedDevice>(
                         this,
                         R.layout.activity_group_list_row,
-                        R.id.activity_group_list_text1,
                         groupService.get().getGroup()) {
 
                     @Override

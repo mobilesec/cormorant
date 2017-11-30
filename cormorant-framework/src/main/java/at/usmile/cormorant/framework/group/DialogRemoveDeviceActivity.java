@@ -52,19 +52,19 @@ public class DialogRemoveDeviceActivity extends AppCompatActivity {
 
         @Override
         public void onServiceConnected(GroupService service) {
-            if(GroupListActivity.deviceToRemove.equals(service.getSelf())) setTitle("Leave group?");
+            if(GroupListActivity.selectedDevice.equals(service.getSelf())) setTitle("Leave group?");
             else setTitle("Remove device?");
         }
     };
 
     public void ok(View view) {
-        groupService.get().removeTrustedDevice(GroupListActivity.deviceToRemove);
-        GroupListActivity.deviceToRemove = null;
+        groupService.get().removeTrustedDevice(GroupListActivity.selectedDevice);
+        GroupListActivity.selectedDevice = null;
         finish();
     }
 
     public void cancel(View view) {
-        GroupListActivity.deviceToRemove = null;
+        GroupListActivity.selectedDevice = null;
         finish();
     }
 

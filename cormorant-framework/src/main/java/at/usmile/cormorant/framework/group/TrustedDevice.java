@@ -22,11 +22,15 @@ package at.usmile.cormorant.framework.group;
 
 import android.location.Location;
 
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
 import at.usmile.cormorant.framework.location.SimpleLocation;
 import at.usmile.cormorant.framework.location.bluetooth.DistanceHelper;
+import at.usmile.cormorant.framework.plugin.PluginInfo;
 
 public class TrustedDevice {
 
@@ -50,6 +54,10 @@ public class TrustedDevice {
     //Fuzzy distance for bluetooth distance
     private DistanceHelper.DISTANCE distanceToOtherDeviceBluetooth;
 
+    private boolean isLocked;
+
+    private List<PluginData> activePlugins;
+
     /*
     * Only to be used by the Group Service for group challenge and response.
     * */
@@ -65,6 +73,7 @@ public class TrustedDevice {
         this.uuid = uuid;
         this.distanceToOtherDeviceGps = DEVICE_UNKNOWN_GPS_DISTANCE;
         this.distanceToOtherDeviceBluetooth = DistanceHelper.DISTANCE.UNKNOWN;
+        this.activePlugins = new LinkedList<>();
     }
 
     public String getDevice() {
@@ -115,6 +124,23 @@ public class TrustedDevice {
         this.distanceToOtherDeviceBluetooth = distanceToOtherDeviceBluetooth;
     }
 
+    public boolean isLocked() {
+        return isLocked;
+    }
+
+    public List<PluginData> getActivePlugins() {
+        return activePlugins;
+    }
+
+    public void setLocked(boolean locked) {
+        isLocked = locked;
+    }
+
+    public void setActivePlugins(List<PluginData> activePlugins) {
+        this.activePlugins.clear();
+        this.activePlugins.addAll(activePlugins);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -143,6 +169,9 @@ public class TrustedDevice {
                 ", location=" + location +
                 ", distanceToOtherDeviceGps=" + distanceToOtherDeviceGps +
                 ", distanceToOtherDeviceBluetooth=" + distanceToOtherDeviceBluetooth +
+                ", isLocked=" + isLocked +
+                ", activePlugins=" + activePlugins +
                 '}';
     }
+
 }

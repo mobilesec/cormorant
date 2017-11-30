@@ -154,6 +154,10 @@ public class MessagingService extends Service implements IncomingChatMessageList
     }
 
     public void sendMessage(TrustedDevice device, CormorantMessage cormorantMessage) {
+        if(connection == null){
+            Log.w(LOG_TAG, "Connection is null - message not sent: " + cormorantMessage);
+            return;
+        }
         try {
             ChatManager chatManager = ChatManager.getInstanceFor(connection);
             EntityBareJid receiver = JidCreate.entityBareFrom(device.getJabberId());

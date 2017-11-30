@@ -61,10 +61,13 @@ import at.usmile.cormorant.framework.messaging.CormorantMessage;
 import at.usmile.cormorant.framework.messaging.CormorantMessageConsumer;
 import at.usmile.cormorant.framework.messaging.DeviceIdListener;
 import at.usmile.cormorant.framework.messaging.MessagingService;
+import at.usmile.cormorant.framework.plugin.PluginInfo;
+import at.usmile.cormorant.framework.plugin.PluginManager;
 
 public class GroupService extends Service implements
         CormorantMessageConsumer, DeviceIdListener, BeaconScanner.BeaconDistanceResultListener,
-        CoarseDeviceDistanceHelper.CoarseDistanceListener {
+        CoarseDeviceDistanceHelper.CoarseDistanceListener,
+        PluginManager.PluginChangeListener {
 
     public final static int CHALLENGE_REQUEST_CANCELED = -1;
     private final static int PIN_LENGTH = 4;
@@ -96,6 +99,7 @@ public class GroupService extends Service implements
         initData();
         initLocationComponents();
         bindService(new Intent(this, MessagingService.class), messageService, Context.BIND_AUTO_CREATE);
+        PluginManager.getInstance().addPluginChangeListener(this);
     }
 
     private void initLocationComponents(){
@@ -126,6 +130,8 @@ public class GroupService extends Service implements
         if(beaconScanner != null) beaconScanner.stopScanner();
 
         if(coarseDeviceDistanceHelper != null) coarseDeviceDistanceHelper.unsubscribeFromLocationUpdates();
+
+        PluginManager.getInstance().removePluginChangeListener(this);
     }
 
     public List<TrustedDevice> getGroup() {
@@ -374,6 +380,15 @@ public class GroupService extends Service implements
         coarseDeviceDistanceHelper.calculateDistances(group, getSelf());
 
         notifyGroupChangeListeners();
+        synchronizeGroupInfo();
+    }
+
+    @Override
+    public void onPluginsChanged() {
+        List<PluginData> pluginDataList = new LinkedList<>();
+        List<PluginInfo> pluginListReadOnly = PluginManager.getInstance().getPluginListReadOnly();
+        pluginListReadOnly.forEach(eachPlugin -> pluginDataList.add(new PluginData(eachPlugin)));
+        getSelf().setActivePlugins(pluginDataList);
         synchronizeGroupInfo();
     }
 }

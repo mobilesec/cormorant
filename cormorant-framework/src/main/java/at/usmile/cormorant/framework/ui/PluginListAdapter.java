@@ -53,6 +53,8 @@ public class PluginListAdapter extends ArrayAdapter<PluginInfo> {
         TextView rowTitle = (TextView) rowView.findViewById(R.id.rowTitle);
         TextView rowDesc = (TextView) rowView.findViewById(R.id.rowDescription);
         TextView rowValue = (TextView) rowView.findViewById(R.id.rowValue);
+        TextView rowLastUpdated = (TextView) rowView.findViewById(R.id.rowLastUpdated);
+        TextView rowState = (TextView) rowView.findViewById(R.id.rowState);
         ImageView imageView = (ImageView) rowView.findViewById(R.id.icon);
 
         PluginInfo pluginInfo = plugins.get(position);
@@ -61,12 +63,18 @@ public class PluginListAdapter extends ArrayAdapter<PluginInfo> {
         rowDesc.setText(pluginInfo.getDescription());
         if(CormorantConstants.PLUGIN_TYPE.confidence.equals(pluginInfo.getPluginType())){
             rowValue.setText("Confidence: " + String.format("%.2f", pluginInfo.getStatusDataConfidence().getConfidence()));
+            rowState.setText("State: " + pluginInfo.getStatusDataConfidence().getStatus());
         }
         else {
             String info = pluginInfo.getStatusDataRisk().getInfo();
-            if(info != null) rowDesc.setText(info);
+            if(info != null) rowDesc.setText(info); //TODO Why override desc?
             rowValue.setText("Risk: " + String.format("%.2f", pluginInfo.getStatusDataRisk().getRisk()));
+            rowState.setText("State: " + pluginInfo.getStatusDataRisk().getStatus());
         }
+        rowLastUpdated.setText("Last updated: " +
+                (pluginInfo.getLastUpdate() != null ? pluginInfo.getLastUpdate().toString()
+                        : "UNKNOWN")
+        );
 
         imageView.setImageDrawable(pluginInfo.getIcon());
         return rowView;

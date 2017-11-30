@@ -99,7 +99,10 @@
         <activity
             android:name=".group.DialogRemoveDeviceActivity"
             android:theme="@style/Theme.AppCompat.Dialog" />
-        <activity android:name=".group.GroupMapActivity"></activity>
+        <activity android:name=".group.GroupMapActivity"
+            android:label="Device Locations"/>
+        <activity android:name=".group.GroupPluginsActivity"
+            android:label="Active Plugins"/>
     </application>
 
 </manifest>
