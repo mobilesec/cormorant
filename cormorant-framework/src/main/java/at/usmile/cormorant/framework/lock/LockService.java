@@ -126,6 +126,10 @@ public class LockService extends Service implements CormorantMessageConsumer {
         }
     }
 
+    public boolean isLocked() {
+        return locked;
+    }
+
     @Override
     public IBinder onBind(Intent intent) {
         return TypedServiceBinder.from(this);

@@ -216,6 +216,10 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
                         ((ImageView) view.findViewById(R.id.activity_group_list_icon)).setImageResource(
                                 CommonUtils.getIconByScreenSize(trustedDevice.getScreenSize(), groupService.get().getSelf().equals(trustedDevice)));
 
+                        ((ImageView) view.findViewById(R.id.activity_group_list_lock_icon)).setImageResource(
+                            trustedDevice.isLocked() ? R.drawable.ic_lock_black_24dp : R.drawable.ic_lock_open_black_24dp
+                        );
+
                         if(groupService.get().getSelf().equals(trustedDevice)){
                             ((TextView) view.findViewById(R.id.activity_group_list_text4)).setVisibility(View.GONE);
                             ((TextView) view.findViewById(R.id.activity_group_list_text5)).setVisibility(View.GONE);

@@ -57,6 +57,7 @@ import at.usmile.cormorant.framework.location.CoarseDeviceDistanceHelper;
 import at.usmile.cormorant.framework.location.bluetooth.BeaconPublisher;
 import at.usmile.cormorant.framework.location.bluetooth.BeaconScanner;
 import at.usmile.cormorant.framework.location.bluetooth.DistanceHelper;
+import at.usmile.cormorant.framework.lock.LockService;
 import at.usmile.cormorant.framework.messaging.CormorantMessage;
 import at.usmile.cormorant.framework.messaging.CormorantMessageConsumer;
 import at.usmile.cormorant.framework.messaging.DeviceIdListener;
@@ -88,6 +89,7 @@ public class GroupService extends Service implements
     private BeaconScanner beaconScanner;
     private BeaconPublisher beaconPublisher;
     private CoarseDeviceDistanceHelper coarseDeviceDistanceHelper;
+    private TypedServiceConnection<LockService> lockService = new TypedServiceConnection<>();
 
     public GroupService() {
     }
@@ -98,7 +100,10 @@ public class GroupService extends Service implements
         preferences = getSharedPreferences(PREFERENCE_NAME, Context.MODE_PRIVATE);
         initData();
         initLocationComponents();
+
         bindService(new Intent(this, MessagingService.class), messageService, Context.BIND_AUTO_CREATE);
+        bindService(new Intent(this, LockService.class), lockService, Context.BIND_AUTO_CREATE);
+
         PluginManager.getInstance().addPluginChangeListener(this);
     }
 
@@ -125,6 +130,8 @@ public class GroupService extends Service implements
         messageService.get().removeMessageListener(CormorantMessage.TYPE.GROUP, this);
         messageService.get().removeDeviceIdListener(this);
         if (messageService.isBound()) unbindService(messageService);
+
+        if (lockService.isBound()) unbindService(lockService);
 
         if(beaconPublisher != null)beaconPublisher.stopBeacon();
         if(beaconScanner != null) beaconScanner.stopScanner();
@@ -237,6 +244,9 @@ public class GroupService extends Service implements
 
     //TODO Do real synchronisation + how to handle offline devices during sync?
     private void synchronizeGroupInfo() {
+        //Update lock state before sync
+        if(lockService.isBound()) getSelf().setLocked(lockService.get().isLocked());
+
         Log.v(LOG_TAG, "Synching new group: " + group);
         for (TrustedDevice device : group) {
             if (!device.equals(getSelf())) {
