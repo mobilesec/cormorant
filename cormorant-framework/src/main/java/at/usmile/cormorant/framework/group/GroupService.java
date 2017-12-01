@@ -72,7 +72,8 @@ import at.usmile.cormorant.framework.plugin.PluginManager;
 public class GroupService extends Service implements
         CormorantMessageConsumer, DeviceIdListener, BeaconScanner.BeaconDistanceResultListener,
         CoarseDeviceDistanceHelper.CoarseDistanceListener,
-        PluginManager.PluginChangeListener {
+        PluginManager.PluginChangeListener,
+        LockService.LockStateListener {
 
     public final static int CHALLENGE_REQUEST_CANCELED = -1;
     private final static int PIN_LENGTH = 4;
@@ -93,7 +94,6 @@ public class GroupService extends Service implements
     private BeaconScanner beaconScanner;
     private BeaconPublisher beaconPublisher;
     private CoarseDeviceDistanceHelper coarseDeviceDistanceHelper;
-    private TypedServiceConnection<LockService> lockService = new TypedServiceConnection<>();
 
     public GroupService() {
     }
@@ -248,9 +248,6 @@ public class GroupService extends Service implements
 
     //TODO Do real synchronisation + how to handle offline devices during sync?
     private void synchronizeGroupInfo() {
-        //Update lock state before sync
-        if(lockService.isBound()) getSelf().setLocked(lockService.get().isLocked());
-
         Log.v(LOG_TAG, "Synching new group: " + group);
         for (TrustedDevice device : group) {
             if (!device.equals(getSelf())) {
@@ -377,6 +374,25 @@ public class GroupService extends Service implements
             service.addMessageListener(CormorantMessage.TYPE.GROUP, GroupService.this);
             service.addDeviceIdListener(GroupService.this);
         }
+
+        @Override
+        public void onServiceDisconnected(MessagingService service) {
+            service.removeMessageListener(CormorantMessage.TYPE.GROUP,GroupService.this);
+            service.removeDeviceIdListener(GroupService.this);
+        }
+    };
+
+    private TypedServiceConnection<LockService> lockService = new TypedServiceConnection<LockService>() {
+
+        @Override
+        public void onServiceConnected(LockService service) {
+            service.addLockStateListener(GroupService.this);
+        }
+
+        @Override
+        public void onServiceDisconnected(LockService service) {
+            service.removeLockStateListener(GroupService.this);
+        }
     };
 
     @Override
@@ -418,6 +434,13 @@ public class GroupService extends Service implements
         List<PluginInfo> pluginListReadOnly = PluginManager.getInstance().getPluginListReadOnly();
         pluginListReadOnly.forEach(eachPlugin -> pluginDataList.add(new PluginData(eachPlugin)));
         getSelf().setActivePlugins(pluginDataList);
+        synchronizeGroupInfo();
+    }
+
+    @Override
+    public void onLockStateChanged(boolean lockState) {
+        self.setLocked(lockState);
+        notifyGroupChangeListeners();
         synchronizeGroupInfo();
     }
 }

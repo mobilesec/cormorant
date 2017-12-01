@@ -1,17 +1,17 @@
 /**
  * Copyright 2016 - 2017
- *
+ * <p>
  * Daniel Hintze <daniel.hintze@fhdw.de>
  * Sebastian Scholz <sebastian.scholz@fhdw.de>
  * Rainhard D. Findling <rainhard.findling@fh-hagenberg.at>
  * Muhammad Muaaz <muhammad.muaaz@usmile.at>
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,12 +22,9 @@ package at.usmile.cormorant.framework.location;
 
 import android.Manifest;
 import android.content.Context;
-import android.location.Address;
-import android.location.Geocoder;
 import android.location.Location;
 import android.os.Looper;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
@@ -35,12 +32,9 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 
-import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Locale;
 
-import at.usmile.cormorant.api.PermissionUtil;
 import at.usmile.cormorant.framework.common.PermissionHelper;
 import at.usmile.cormorant.framework.group.TrustedDevice;
 
@@ -82,8 +76,7 @@ public class CoarseDeviceDistanceHelper {
         try {
             if (PermissionHelper.hasPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)) {
                 fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper());
-            }
-            else {
+            } else {
                 Log.w(LOG_TAG, "Location permission not granted. GPS data won't be available");
             }
         } catch (SecurityException e) {
@@ -98,17 +91,17 @@ public class CoarseDeviceDistanceHelper {
     public void getCurrentLocation() {
         try {
             fusedLocationClient.getLastLocation()
-                .addOnSuccessListener(
-                    location -> Log.d(LOG_TAG, "Current location: " + location))
-                .addOnFailureListener
-                    (error -> Log.w(LOG_TAG, "Current location could not be retrieved: " + error));
+                    .addOnSuccessListener(
+                            location -> Log.d(LOG_TAG, "Current location: " + location))
+                    .addOnFailureListener
+                            (error -> Log.w(LOG_TAG, "Current location could not be retrieved: " + error));
         } catch (SecurityException e) {
             Log.e(LOG_TAG, "Location permission not granted.", e);
         }
     }
 
     //TODO set intervall to 1 minute
-    private void createLocationRequest(){
+    private void createLocationRequest() {
         locationRequest = new LocationRequest();
         locationRequest.setInterval(GPS_UPDATE_INTERVAL);
         locationRequest.setFastestInterval(GPS_UPDATE_INTERVAL);
@@ -130,7 +123,7 @@ public class CoarseDeviceDistanceHelper {
     public double calculateDeviceDistance(TrustedDevice deviceSelf, TrustedDevice deviceOther) {
         SimpleLocation locSelf = deviceSelf.getLocation();
         SimpleLocation locOther = deviceOther.getLocation();
-        if(locSelf == null || locOther == null) {
+        if (locSelf == null || locOther == null) {
             Log.v(LOG_TAG, String.format("Distance to %s could not be calculated since location for one of the devices is not available.", deviceOther));
             return DEVICE_UNKNOWN_GPS_DISTANCE;
         }
@@ -140,16 +133,16 @@ public class CoarseDeviceDistanceHelper {
         return Math.round(distanceInMeter[0]);
     }
 
-    public interface CoarseDistanceListener {
-        void onLocationChanged(Location location);
-    }
-
     public void addCoarseDistanceListener(CoarseDistanceListener coarseDistanceListener) {
         this.coarseDistanceListeners.add(coarseDistanceListener);
     }
 
     public void removeCoarseDistanceListener(CoarseDistanceListener coarseDistanceListener) {
         this.coarseDistanceListeners.remove(coarseDistanceListener);
+    }
+
+    public interface CoarseDistanceListener {
+        void onLocationChanged(Location location);
     }
 
 }

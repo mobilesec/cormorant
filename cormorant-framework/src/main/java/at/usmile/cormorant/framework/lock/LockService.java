@@ -36,6 +36,9 @@ import android.view.WindowManager;
 
 import org.jivesoftware.smack.chat2.Chat;
 
+import java.util.LinkedList;
+import java.util.List;
+
 import at.usmile.cormorant.framework.AdminReceiver;
 import at.usmile.cormorant.framework.common.TypedServiceBinder;
 import at.usmile.cormorant.framework.common.TypedServiceConnection;
@@ -51,6 +54,8 @@ public class LockService extends Service implements CormorantMessageConsumer {
     private KeyguardManager keyguardManager;
 
     private ComponentName adminReceiverComponent;
+
+    private List<LockStateListener> lockStateListeners = new LinkedList<>();
 
     private TypedServiceConnection<MessagingService> messagingService = new TypedServiceConnection<MessagingService>() {
         @Override
@@ -113,6 +118,7 @@ public class LockService extends Service implements CormorantMessageConsumer {
         } else {
             Log.d(LOG_TAG, "Could not disable PIN lock");
         }
+        notifyLockStateListeners();
     }
 
     private void enableLock() {
@@ -126,6 +132,7 @@ public class LockService extends Service implements CormorantMessageConsumer {
         } else {
             Log.d(LOG_TAG, "Could not enabled PIN lock");
         }
+        notifyLockStateListeners();
     }
 
     @Override
@@ -150,6 +157,23 @@ public class LockService extends Service implements CormorantMessageConsumer {
             }
         }
 
+    }
+
+    private void notifyLockStateListeners() {
+        lockStateListeners.forEach(eachListener -> eachListener.onLockStateChanged(isLocked()));
+    }
+
+    public interface LockStateListener {
+        void onLockStateChanged(boolean lockState);
+    }
+
+    public void addLockStateListener(LockStateListener lockStateListener) {
+        this.lockStateListeners.add(lockStateListener);
+        notifyLockStateListeners();
+    }
+
+    public void removeLockStateListener(LockStateListener lockStateListener) {
+        this.lockStateListeners.remove(lockStateListener);
     }
 
 }

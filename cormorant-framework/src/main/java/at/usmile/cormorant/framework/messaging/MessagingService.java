@@ -119,7 +119,7 @@ public class MessagingService extends Service implements IncomingChatMessageList
     private String createMessage(CormorantMessage cormorantMessage) {
         String message = cormorantMessage.getClazz() + MESSAGE_SPLIT_CHAR;
         message += gson.toJson(cormorantMessage);
-        Log.d(LOG_TAG, "Created message: " + message);
+        Log.v(LOG_TAG, "Created message: " + message);
         return message;
     }
 
@@ -141,7 +141,7 @@ public class MessagingService extends Service implements IncomingChatMessageList
 
     @Override
     public void newIncomingMessage(EntityBareJid from, Message message, Chat chat) {
-        Log.d(LOG_TAG, "New message from " + from + ": " + message.getBody());
+        Log.v(LOG_TAG, "New message from " + from + ": " + message.getBody());
 
         final CormorantMessage cormorantMessage = parseMessage(message.getBody());
         if (cormorantMessage == null) return;
