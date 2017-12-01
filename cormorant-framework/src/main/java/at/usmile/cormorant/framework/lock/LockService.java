@@ -47,9 +47,8 @@ public class LockService extends Service implements CormorantMessageConsumer {
 
     private final static String LOG_TAG = LockService.class.getSimpleName();
 
-    private boolean locked = true;
-
     private DevicePolicyManager devicePolicyManager;
+    private KeyguardManager keyguardManager;
 
     private ComponentName adminReceiverComponent;
 
@@ -71,6 +70,7 @@ public class LockService extends Service implements CormorantMessageConsumer {
 
         bindService(new Intent(this, MessagingService.class), messagingService, Context.BIND_AUTO_CREATE);
         devicePolicyManager = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
+        keyguardManager = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
         adminReceiverComponent = new ComponentName(this, AdminReceiver.class);
     }
 
@@ -83,20 +83,22 @@ public class LockService extends Service implements CormorantMessageConsumer {
         super.onDestroy();
     }
 
+    public boolean isLocked() {
+        boolean isLocked = keyguardManager.isDeviceSecure();
+        Log.v(LOG_TAG, "Device locked: " + isLocked);
+        return isLocked;
+    }
+
     public synchronized void lock() {
         Log.d(LOG_TAG, "locking");
-
         enableLock();
         devicePolicyManager.lockNow();
-
-        locked = true;
         Log.d(LOG_TAG, "locked");
     }
 
     public synchronized void unlock() {
         Log.d(LOG_TAG, "unlocking");
         disableLock();
-        locked = false;
         Log.d(LOG_TAG, "unlocked");
     }
 
@@ -126,10 +128,6 @@ public class LockService extends Service implements CormorantMessageConsumer {
         }
     }
 
-    public boolean isLocked() {
-        return locked;
-    }
-
     @Override
     public IBinder onBind(Intent intent) {
         return TypedServiceBinder.from(this);
@@ -145,7 +143,7 @@ public class LockService extends Service implements CormorantMessageConsumer {
         Log.d(LOG_TAG, "handleMessage(" + cormorantMessage + ")");
 
         if (cormorantMessage instanceof DeviceLockCommand) {
-            if (locked) {
+            if (isLocked()) {
                 unlock();
             } else {
                 lock();

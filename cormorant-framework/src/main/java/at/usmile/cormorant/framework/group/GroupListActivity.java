@@ -191,7 +191,8 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
                         }
 
                         TrustedDevice trustedDevice = getItem(position);
-                        String gpsString = "";
+                        String gpsString = "GPS: Unknown";
+                        String gpsAddress = "Address: UNKNOWN";
                         double gpsDistance = TrustedDevice.DEVICE_UNKNOWN_GPS_DISTANCE;
 
                         if(trustedDevice.equals(groupService.get().getSelf())){
@@ -199,21 +200,20 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
                                 gpsString = String.format("GPS: %s, %s", trustedDevice.getLocation().getLatitude(),
                                         trustedDevice.getLocation().getLongitude());
                             }
-                            else {
-                                gpsString = "GPS: Unknown";
-                            }
                         }
                         else {
                             gpsDistance = Math.round(trustedDevice.getDistanceToOtherDeviceGps() / 100) / 10d;
                             gpsString = "GPS distance: " + gpsDistance + "km";
                         }
 
+                        if(trustedDevice.getLocation() != null) gpsAddress = trustedDevice.getLocation().getAddress();
+
                         ((TextView) view.findViewById(R.id.activity_group_list_text1)).setText(trustedDevice.getId());
                         ((TextView) view.findViewById(R.id.activity_group_list_text2)).setText(trustedDevice.getDevice());
                         ((TextView) view.findViewById(R.id.activity_group_list_text3)).setText(gpsString);
                         ((TextView) view.findViewById(R.id.activity_group_list_text4)).setText("BT distance: " + trustedDevice.getDistanceToOtherDeviceBluetooth());
                         ((TextView) view.findViewById(R.id.activity_group_list_text5)).setText("Combined distance: " + getDiscreteValue(trustedDevice, gpsDistance));
-                        ((TextView) view.findViewById(R.id.activity_group_list_text6)).setText(trustedDevice.getLocation().getAddress());
+                        ((TextView) view.findViewById(R.id.activity_group_list_text6)).setText(gpsAddress);
                         ((ImageView) view.findViewById(R.id.activity_group_list_icon)).setImageResource(
                                 CommonUtils.getIconByScreenSize(trustedDevice.getScreenSize(), groupService.get().getSelf().equals(trustedDevice)));
 

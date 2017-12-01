@@ -11,6 +11,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import java.text.SimpleDateFormat;
 import java.util.LinkedList;
 
 import at.usmile.cormorant.api.CormorantConstants;
@@ -44,14 +45,14 @@ public class GroupPluginsActivity extends AppCompatActivity {
                         }
 
                         PluginData pluginData = getItem(position);
-                        String pluginValue = "Value: UNKNOWN";
-                        String pluginState = "State: UNKNOWN";
+                        String pluginValue = "";
+                        String pluginState = "";
 
                         if(CormorantConstants.PLUGIN_TYPE.confidence.equals(pluginData.getPluginType())){
                             pluginValue = "Confidence: " + String.format("%.2f", pluginData.getStatusDataConfidence().getConfidence());
                             pluginState = "State: " + pluginData.getStatusDataConfidence().getStatus();
                         }
-                        else if(CormorantConstants.PLUGIN_TYPE.confidence.equals(pluginData.getPluginType())) {
+                        else {
                             pluginValue = "Risk: " + String.format("%.2f", pluginData.getStatusDataRisk().getRisk());
                             pluginState = "State: " + pluginData.getStatusDataRisk().getStatus();
                         }
@@ -61,10 +62,10 @@ public class GroupPluginsActivity extends AppCompatActivity {
                         ((TextView) view.findViewById(R.id.rowDescription)).setText(pluginData.getDescription());
                         ((TextView) view.findViewById(R.id.rowValue)).setText(pluginValue);
                         ((TextView) view.findViewById(R.id.rowLastUpdated)).setText("Last updated: " +
-                                (pluginData.getLastUpdate() != null ? pluginData.getLastUpdate().toString()
+                                (pluginData.getLastUpdate() != null ? new SimpleDateFormat("dd-M-yyyy HH:mm:ss").format(pluginData.getLastUpdate().getTime())
                                         : "UNKNOWN")
                         );
-                        ((TextView) view.findViewById(R.id.rowState)).setText(pluginValue);
+                        ((TextView) view.findViewById(R.id.rowState)).setText(pluginState);
                         return view;
                     }
                 };

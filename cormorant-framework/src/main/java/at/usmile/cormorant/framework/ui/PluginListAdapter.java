@@ -28,6 +28,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import java.text.SimpleDateFormat;
 import java.util.List;
 
 import at.usmile.cormorant.api.CormorantConstants;
@@ -72,7 +73,7 @@ public class PluginListAdapter extends ArrayAdapter<PluginInfo> {
             rowState.setText("State: " + pluginInfo.getStatusDataRisk().getStatus());
         }
         rowLastUpdated.setText("Last updated: " +
-                (pluginInfo.getLastUpdate() != null ? pluginInfo.getLastUpdate().toString()
+                (pluginInfo.getLastUpdate() != null ? new SimpleDateFormat("dd-M-yyyy HH:mm:ss").format(pluginInfo.getLastUpdate().getTime())
                         : "UNKNOWN")
         );
 
