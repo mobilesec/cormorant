@@ -1,17 +1,17 @@
 /**
  * Copyright 2016 - 2017
- *
+ * <p>
  * Daniel Hintze <daniel.hintze@fhdw.de>
  * Sebastian Scholz <sebastian.scholz@fhdw.de>
  * Rainhard D. Findling <rainhard.findling@fh-hagenberg.at>
  * Muhammad Muaaz <muhammad.muaaz@usmile.at>
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,26 +20,20 @@
  */
 package at.usmile.cormorant.framework.lock;
 
-import android.app.KeyguardManager;
-import android.app.KeyguardManager.KeyguardLock;
+import android.app.NotificationManager;
 import android.app.Service;
-import android.app.admin.DevicePolicyManager;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Handler;
 import android.os.IBinder;
-import android.os.Looper;
-import android.os.PowerManager;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
-import android.view.WindowManager;
 
 import org.jivesoftware.smack.chat2.Chat;
 
 import java.util.LinkedList;
 import java.util.List;
 
-import at.usmile.cormorant.framework.AdminReceiver;
+import at.usmile.cormorant.framework.R;
 import at.usmile.cormorant.framework.common.TypedServiceBinder;
 import at.usmile.cormorant.framework.common.TypedServiceConnection;
 import at.usmile.cormorant.framework.messaging.CormorantMessage;
@@ -50,12 +44,9 @@ public class LockService extends Service implements CormorantMessageConsumer {
 
     private final static String LOG_TAG = LockService.class.getSimpleName();
 
-    private DevicePolicyManager devicePolicyManager;
-    private KeyguardManager keyguardManager;
-
-    private ComponentName adminReceiverComponent;
-
+    private boolean locked = true;
     private List<LockStateListener> lockStateListeners = new LinkedList<>();
+    private NotificationManager notificationManager;
 
     private TypedServiceConnection<MessagingService> messagingService = new TypedServiceConnection<MessagingService>() {
         @Override
@@ -72,66 +63,36 @@ public class LockService extends Service implements CormorantMessageConsumer {
     @Override
     public void onCreate() {
         super.onCreate();
-
         bindService(new Intent(this, MessagingService.class), messagingService, Context.BIND_AUTO_CREATE);
-        devicePolicyManager = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
-        keyguardManager = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
-        adminReceiverComponent = new ComponentName(this, AdminReceiver.class);
+        this.notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        showLockNotification();
     }
 
     @Override
     public void onDestroy() {
         if (messagingService.isBound()) unbindService(messagingService);
-
-        enableLock();
-
+        setLocked(true);
         super.onDestroy();
     }
 
     public boolean isLocked() {
-        boolean isLocked = keyguardManager.isDeviceSecure();
-        Log.v(LOG_TAG, "Device locked: " + isLocked);
-        return isLocked;
+        return locked;
+    }
+
+    private void setLocked(boolean locked) {
+        this.locked = locked;
+        showLockNotification();
     }
 
     public synchronized void lock() {
-        Log.d(LOG_TAG, "locking");
-        enableLock();
-        devicePolicyManager.lockNow();
-        Log.d(LOG_TAG, "locked");
-    }
-
-    public synchronized void unlock() {
-        Log.d(LOG_TAG, "unlocking");
-        disableLock();
-        Log.d(LOG_TAG, "unlocked");
-    }
-
-    public void disableLock() {
-        // Set lockscreen to swipe-to-unlock
-        devicePolicyManager.setPasswordQuality(adminReceiverComponent, DevicePolicyManager.PASSWORD_QUALITY_UNSPECIFIED);
-        devicePolicyManager.setPasswordMinimumLength(adminReceiverComponent, 0);
-        boolean result = devicePolicyManager.resetPassword("", DevicePolicyManager.RESET_PASSWORD_REQUIRE_ENTRY);
-
-        if (result) {
-            Log.d(LOG_TAG, "Successfully Disabled PIN lock");
-        } else {
-            Log.d(LOG_TAG, "Could not disable PIN lock");
-        }
+        setLocked(true);
+        Log.d(LOG_TAG, "Device locked");
         notifyLockStateListeners();
     }
 
-    private void enableLock() {
-        devicePolicyManager.setPasswordQuality(adminReceiverComponent, DevicePolicyManager.PASSWORD_QUALITY_NUMERIC);
-        devicePolicyManager.setPasswordMinimumLength(adminReceiverComponent, 4);
-
-        // FIXME: Hardcoded for now, have user configure the pin later
-        boolean result = devicePolicyManager.resetPassword("1234", DevicePolicyManager.RESET_PASSWORD_REQUIRE_ENTRY);
-        if (result) {
-            Log.d(LOG_TAG, "Successfully enabled PIN lock");
-        } else {
-            Log.d(LOG_TAG, "Could not enabled PIN lock");
-        }
+    public synchronized void unlock() {
+        setLocked(false);
+        Log.d(LOG_TAG, "Device unlocked");
         notifyLockStateListeners();
     }
 
@@ -156,15 +117,26 @@ public class LockService extends Service implements CormorantMessageConsumer {
                 lock();
             }
         }
+    }
 
+    private void showLockNotification() {
+        int icon = isLocked() ? R.drawable.ic_lock_black_24dp : R.drawable.ic_lock_open_black_24dp;
+        String title = isLocked() ? "LOCKED" : "UNLOCKED";
+        String text = isLocked() ? "Device is locked" : "Device is unlocked";
+        int id = 4711;
+
+        NotificationCompat.Builder notificationBuilder =
+                new NotificationCompat.Builder(this, "default")
+                        .setSmallIcon(icon)
+                        .setOngoing(true)
+                        .setPriority(NotificationCompat.PRIORITY_HIGH)
+                        .setContentTitle(title)
+                        .setContentText(text);
+        notificationManager.notify(id, notificationBuilder.build());
     }
 
     private void notifyLockStateListeners() {
         lockStateListeners.forEach(eachListener -> eachListener.onLockStateChanged(isLocked()));
-    }
-
-    public interface LockStateListener {
-        void onLockStateChanged(boolean lockState);
     }
 
     public void addLockStateListener(LockStateListener lockStateListener) {
@@ -174,6 +146,10 @@ public class LockService extends Service implements CormorantMessageConsumer {
 
     public void removeLockStateListener(LockStateListener lockStateListener) {
         this.lockStateListeners.remove(lockStateListener);
+    }
+
+    public interface LockStateListener {
+        void onLockStateChanged(boolean lockState);
     }
 
 }

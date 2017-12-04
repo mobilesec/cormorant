@@ -272,6 +272,7 @@ public class GroupService extends Service implements
         } else {
             this.group.clear();
             this.group.addAll(groupUpdateMessage.getGroup());
+            rebindSelfToGroup();
             showToast("Group has been refreshed");
         }
         notifyGroupChangeListeners();
@@ -345,9 +346,12 @@ public class GroupService extends Service implements
             Type groupListType = new TypeToken<LinkedList<TrustedDevice>>() {
             }.getType();
             this.group = gson.fromJson(groupJson, groupListType);
-            //rebind list and self object after json import
-            Collections.replaceAll(this.group, getSelf(), getSelf());
+            rebindSelfToGroup();
         }
+    }
+
+    private void rebindSelfToGroup() {
+        Collections.replaceAll(this.group, getSelf(), getSelf());
     }
 
     private void saveSelf() {
