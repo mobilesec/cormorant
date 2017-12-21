@@ -131,6 +131,11 @@ public class PushServiceSocket {
     makeServiceRequest(String.format(path, credentialsProvider.getUser()), "GET", null);
   }
 
+  public void createCormorantAccount(String signalingKey, int registrationId, boolean fetchesMessages) throws IOException {
+    AccountAttributes signalingKeyEntity = new AccountAttributes(signalingKey, registrationId, fetchesMessages);
+    makeServiceRequest(String.format("v1/accounts/cormorant/%s", credentialsProvider.getUser()), "PUT", JsonUtil.toJson(signalingKeyEntity));
+  }
+
   public void verifyAccountCode(String verificationCode, String signalingKey, int registrationId, boolean fetchesMessages)
       throws IOException
   {
