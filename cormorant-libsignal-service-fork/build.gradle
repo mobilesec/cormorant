@@ -1,0 +1,47 @@
+apply plugin: 'com.android.library'
+apply plugin: 'maven'
+
+archivesBaseName    = "signal-service-java"
+version             = "2.6.12"
+group               = "org.whispersystems"
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
+android {
+    compileSdkVersion global_compileSdkVersion
+
+    defaultConfig {
+        minSdkVersion global_minSdkVersion
+        targetSdkVersion global_targetSdkVersion
+        versionCode 1
+        versionName "1.0"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    signingConfigs {
+        debug {
+            storeFile file('../debug.keystore')
+        }
+    }
+}
+
+dependencies {
+    compile 'com.google.protobuf:protobuf-java:2.5.0'
+    compile 'com.googlecode.libphonenumber:libphonenumber:8.8.6'
+    compile 'com.fasterxml.jackson.core:jackson-databind:2.5.0'
+
+    compile "org.whispersystems:signal-protocol-java:2.6.2"
+    compile 'com.squareup.okhttp3:okhttp:3.9.0'
+    compile 'org.apache.httpcomponents:httpclient:4.4'
+    compile 'com.madgag.spongycastle:prov:1.51.0.0'
+
+    testCompile 'junit:junit:3.8.2'
+    testCompile 'org.assertj:assertj-core:1.7.1'
+}

@@ -7,6 +7,10 @@ configurations {
 android {
     compileSdkVersion global_compileSdkVersion
 
+    packagingOptions {
+        exclude 'META-INF/DEPENDENCIES'
+    }
+
     defaultConfig {
         minSdkVersion global_minSdkVersion
         targetSdkVersion global_targetSdkVersion
@@ -38,6 +42,8 @@ android {
 
 dependencies {
     implementation project(':cormorant-api')
+    implementation project(':cormorant-libsignal-service-fork')
+
     implementation 'com.android.support:appcompat-v7:' + global_appCompatVersion
     implementation 'org.igniterealtime.smack:smack-android:4.2.1-SNAPSHOT'
     implementation 'org.igniterealtime.smack:smack-android-extensions:4.2.1-SNAPSHOT'
@@ -48,5 +54,6 @@ dependencies {
     implementation 'com.google.android.gms:play-services-maps:11.6.0'
     implementation 'com.google.android.gms:play-services-location:11.6.0'
     implementation 'com.google.android.gms:play-services-nearby:11.6.0'
+
     testImplementation 'junit:junit:4.12'
 }
