@@ -40,7 +40,7 @@ allprojects {
 
     license {
         header rootProject.file('HEADER')
-        excludes(["**/*.xml"])
+        excludes(["**/*.xml", "**/*.png"])
     }
 
 }

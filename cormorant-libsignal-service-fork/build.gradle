@@ -32,16 +32,20 @@ android {
     }
 }
 
+license {
+    excludes(["**/*.*"])
+}
+
 dependencies {
-    compile 'com.google.protobuf:protobuf-java:2.5.0'
-    compile 'com.googlecode.libphonenumber:libphonenumber:8.8.6'
-    compile 'com.fasterxml.jackson.core:jackson-databind:2.5.0'
+    implementation 'com.google.protobuf:protobuf-java:2.5.0'
+    implementation 'com.googlecode.libphonenumber:libphonenumber:8.8.6'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.5.0'
 
-    compile "org.whispersystems:signal-protocol-java:2.6.2"
-    compile 'com.squareup.okhttp3:okhttp:3.9.0'
-    compile 'org.apache.httpcomponents:httpclient:4.4'
-    compile 'com.madgag.spongycastle:prov:1.51.0.0'
+    implementation "org.whispersystems:signal-protocol-java:2.6.2"
+    implementation 'com.squareup.okhttp3:okhttp:3.9.0'
+    implementation 'org.apache.httpcomponents:httpclient:4.4'
+    implementation 'com.madgag.spongycastle:prov:1.51.0.0'
 
-    testCompile 'junit:junit:3.8.2'
-    testCompile 'org.assertj:assertj-core:1.7.1'
+    testImplementation 'junit:junit:3.8.2'
+    testImplementation 'org.assertj:assertj-core:1.7.1'
 }
