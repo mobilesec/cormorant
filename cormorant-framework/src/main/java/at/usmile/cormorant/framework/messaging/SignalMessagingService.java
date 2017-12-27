@@ -1,17 +1,17 @@
 /**
  * Copyright 2016 - 2017
- * <p>
+ *
  * Daniel Hintze <daniel.hintze@fhdw.de>
  * Sebastian Scholz <sebastian.scholz@fhdw.de>
  * Rainhard D. Findling <rainhard.findling@fh-hagenberg.at>
  * Muhammad Muaaz <muhammad.muaaz@usmile.at>
- * <p>
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,6 +24,7 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.AsyncTask;
 import android.os.IBinder;
 import android.util.Log;
 
@@ -88,22 +89,10 @@ public class SignalMessagingService extends Service {
 
         SignalServiceConfiguration serviceConfiguration = SignalParameter.getServiceConfiguration(   new CormorantTrustStore(this));
 
-
         accountManager = new SignalServiceAccountManager(serviceConfiguration, signalParameter.getUser(), signalParameter.getPassword(), USER_AGENT);
 
         if (signalParameter.isNew()) {
-            try {
-                IdentityKeyPair identityKey = KeyHelper.generateIdentityKeyPair();
-                List<PreKeyRecord> oneTimePreKeys = KeyHelper.generatePreKeys(0, 100);
-                SignedPreKeyRecord signedPreKeyRecord = KeyHelper.generateSignedPreKey(signalParameter.getIdentityKey(), 0);
-
-                accountManager.createCormorantAccount(signalParameter.getSignalingKey(), signalParameter.getRegistrationId(), true);
-                accountManager.setPreKeys(identityKey.getPublicKey(), signedPreKeyRecord, oneTimePreKeys);
-
-                signalParameter.save(prefs);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+           new CreateAccountTask(prefs).execute();
         }
 
         messageSender = new SignalServiceMessageSender(serviceConfiguration, signalParameter.getUser(), signalParameter.getPassword(),
@@ -189,6 +178,33 @@ public class SignalMessagingService extends Service {
         } finally {
             if (messagePipe != null)
                 messagePipe.shutdown();
+        }
+    }
+
+    private class CreateAccountTask extends AsyncTask<String, Void, Void> {
+
+        private SharedPreferences prefs;
+
+        private CreateAccountTask(SharedPreferences prefs) {
+            this.prefs = prefs;
+        }
+
+        @Override
+        protected Void doInBackground(String... strings) {
+            try {
+                IdentityKeyPair identityKey = KeyHelper.generateIdentityKeyPair();
+                List<PreKeyRecord> oneTimePreKeys = KeyHelper.generatePreKeys(0, 100);
+                SignedPreKeyRecord signedPreKeyRecord = KeyHelper.generateSignedPreKey(signalParameter.getIdentityKey(), 0);
+
+                accountManager.createCormorantAccount(signalParameter.getSignalingKey(), signalParameter.getRegistrationId(), true);
+                accountManager.setPreKeys(identityKey.getPublicKey(), signedPreKeyRecord, oneTimePreKeys);
+
+                signalParameter.save(prefs);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+
+            return null;
         }
     }
 
