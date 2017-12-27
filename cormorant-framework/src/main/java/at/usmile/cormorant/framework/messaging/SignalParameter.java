@@ -50,7 +50,7 @@ public class SignalParameter {
 
     private final static String LOG_TAG = SignalMessagingService.class.getSimpleName();
 
-    private static final String URL = "https://cormorant.hintze-it.de/";
+    private static final String URL = "https://cormorant.hintze-it.de";
 
     private static final String PREF_SIGNAL_USER = "signalUser";
     private static final String PREF_SIGNAL_PASSWORD = "signalPassword";
