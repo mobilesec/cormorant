@@ -1,0 +1,46 @@
+apply plugin: 'com.android.library'
+apply plugin: 'maven'
+
+archivesBaseName    = "signal-android"
+version             = "2.6.12"
+group               = "org.whispersystems"
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
+android {
+    compileSdkVersion global_compileSdkVersion
+
+    defaultConfig {
+        minSdkVersion global_minSdkVersion
+        targetSdkVersion global_targetSdkVersion
+        versionCode 1
+        versionName "1.0"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    signingConfigs {
+        debug {
+            storeFile file('../debug.keystore')
+        }
+    }
+}
+
+license {
+    excludes(["**/*.*"])
+}
+
+dependencies {
+    implementation project(':cormorant-api')
+
+    implementation "org.whispersystems:signal-protocol-java:2.6.2"
+    implementation 'com.android.support:appcompat-v7:' + global_appCompatVersion
+
+    implementation project(":cormorant-libsignal-service-fork")
+}

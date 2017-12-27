@@ -41,14 +41,13 @@ android {
 
 
 dependencies {
+    implementation "org.whispersystems:signal-protocol-java:2.6.2"
+
     implementation project(':cormorant-api')
+    implementation project(':cormorant-signal-android-fork')
     implementation project(':cormorant-libsignal-service-fork')
 
     implementation 'com.android.support:appcompat-v7:' + global_appCompatVersion
-    implementation 'org.igniterealtime.smack:smack-android:4.2.1-SNAPSHOT'
-    implementation 'org.igniterealtime.smack:smack-android-extensions:4.2.1-SNAPSHOT'
-    implementation 'org.igniterealtime.smack:smack-tcp:4.2.1-SNAPSHOT'
-    implementation 'org.igniterealtime.smack:smack-extensions:4.2.1-SNAPSHOT'
     implementation 'com.google.code.gson:gson:2.8.0'
     implementation 'com.journeyapps:zxing-android-embedded:3.4.0'
     implementation 'com.google.android.gms:play-services-maps:11.8.0'

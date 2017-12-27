@@ -31,10 +31,9 @@ import android.util.Log;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 
-import org.whispersystems.libsignal.IdentityKeyPair;
+import org.thoughtcrime.securesms.crypto.storage.SignalProtocolStoreImpl;
 import org.whispersystems.libsignal.state.PreKeyRecord;
 import org.whispersystems.libsignal.state.SignedPreKeyRecord;
-import org.whispersystems.libsignal.state.impl.InMemorySignalProtocolStore;
 import org.whispersystems.libsignal.util.KeyHelper;
 import org.whispersystems.libsignal.util.guava.Optional;
 import org.whispersystems.signalservice.api.SignalServiceAccountManager;
@@ -44,7 +43,6 @@ import org.whispersystems.signalservice.api.SignalServiceMessageSender;
 import org.whispersystems.signalservice.api.crypto.SignalServiceCipher;
 import org.whispersystems.signalservice.api.messages.SignalServiceContent;
 import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage;
-import org.whispersystems.signalservice.api.messages.SignalServiceEnvelope;
 import org.whispersystems.signalservice.api.push.SignalServiceAddress;
 import org.whispersystems.signalservice.api.websocket.ConnectivityListener;
 import org.whispersystems.signalservice.internal.configuration.SignalServiceConfiguration;
@@ -66,7 +64,6 @@ public class SignalMessagingService extends Service {
 
     private SignalParameter signalParameter;
 
-    private int registrationId;
     private SignalServiceAccountManager accountManager;
     private SignalServiceMessageSender messageSender;
     private SignalServiceMessageReceiver messageReceiver;
@@ -97,8 +94,11 @@ public class SignalMessagingService extends Service {
             new CreateAccountTask(prefs).execute();
         }
 
+        SignalProtocolStoreImpl signalProtocolStore = new SignalProtocolStoreImpl(this);
+
+
         messageSender = new SignalServiceMessageSender(serviceConfiguration, signalParameter.getUser(), signalParameter.getPassword(),
-                new InMemorySignalProtocolStore(signalParameter.getIdentityKey(), 0), USER_AGENT, Optional.absent(), Optional.absent());
+                signalProtocolStore, USER_AGENT, Optional.absent(), Optional.absent());
 
         messageReceiver = new SignalServiceMessageReceiver(serviceConfiguration, signalParameter.getUser(), signalParameter.getPassword(), signalParameter.getSignalingKey(), USER_AGENT,
                 new ConnectivityListener() {
@@ -127,8 +127,8 @@ public class SignalMessagingService extends Service {
                     }
                 });
 
+        new SendMessageTask().execute("86b08d6d-2c18-47c1-8c6f-0b24dc5da54e", "Hello world!");
         new ListenTask().execute();
-        new SendMessageTask().execute("15a57286-585d-43df-817a-b3bdb2a3f9ee", "Hello world!");
     }
 
     public String getDeviceID() {
@@ -161,6 +161,8 @@ public class SignalMessagingService extends Service {
     }
 
     private void send(String recipient, String msg) throws Exception {
+        Log.d(LOG_TAG, "send message to " + recipient);
+
         messageSender.sendMessage(new SignalServiceAddress(recipient),
                 SignalServiceDataMessage.newBuilder().withBody(msg).build());
     }
@@ -170,14 +172,32 @@ public class SignalMessagingService extends Service {
         try {
             messagePipe = messageReceiver.createMessagePipe();
 
-            while (true) {
+            Log.w(LOG_TAG, "Reading message...");
+            messagePipe.read(1, TimeUnit.MINUTES,
+                    envelope -> {
+                        Log.w(LOG_TAG, "Retrieved envelope! " + envelope.getSource());
+
+                        SignalProtocolStoreImpl signalProtocolStore = new SignalProtocolStoreImpl(this);
+
+                        SignalServiceCipher cipher = new SignalServiceCipher(new SignalServiceAddress(signalParameter.getUser()),
+                                signalProtocolStore);
+                        try {
+                            SignalServiceContent message = cipher.decrypt(envelope);
+                            System.out.println("Received message: " + message.getDataMessage().get().getBody().get());
+                        }catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+
+
+    /*        while (true) {
                 SignalServiceEnvelope envelope = messagePipe.read(10, TimeUnit.SECONDS);
                 SignalServiceCipher cipher = new SignalServiceCipher(new SignalServiceAddress(signalParameter.getUser()),
                         new InMemorySignalProtocolStore(signalParameter.getIdentityKey(), registrationId));
                 SignalServiceContent message = cipher.decrypt(envelope);
 
                 System.out.println("Received message: " + message.getDataMessage().get().getBody().get());
-            }
+            }*/
 
         } finally {
             if (messagePipe != null)
@@ -212,6 +232,7 @@ public class SignalMessagingService extends Service {
             return null;
         }
     }
+
     private class CreateAccountTask extends AsyncTask<String, Void, Void> {
 
         private SharedPreferences prefs;
@@ -223,12 +244,11 @@ public class SignalMessagingService extends Service {
         @Override
         protected Void doInBackground(String... strings) {
             try {
-                IdentityKeyPair identityKey = KeyHelper.generateIdentityKeyPair();
                 List<PreKeyRecord> oneTimePreKeys = KeyHelper.generatePreKeys(0, 100);
                 SignedPreKeyRecord signedPreKeyRecord = KeyHelper.generateSignedPreKey(signalParameter.getIdentityKey(), 0);
 
                 accountManager.createCormorantAccount(signalParameter.getSignalingKey(), signalParameter.getRegistrationId(), true);
-                accountManager.setPreKeys(identityKey.getPublicKey(), signedPreKeyRecord, oneTimePreKeys);
+                accountManager.setPreKeys(signalParameter.getIdentityKey().getPublicKey(), signedPreKeyRecord, oneTimePreKeys);
 
                 signalParameter.save(prefs);
             } catch (Exception e) {

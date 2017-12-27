@@ -5,3 +5,4 @@ include 'cormorant-risk-plugin'
 include 'cormorant-location-risk-plugin'
 
 include 'cormorant-libsignal-service-fork'
+include 'cormorant-signal-android-fork'
