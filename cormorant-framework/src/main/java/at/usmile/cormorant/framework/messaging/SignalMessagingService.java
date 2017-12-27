@@ -1,17 +1,17 @@
 /**
  * Copyright 2016 - 2017
- *
+ * <p>
  * Daniel Hintze <daniel.hintze@fhdw.de>
  * Sebastian Scholz <sebastian.scholz@fhdw.de>
  * Rainhard D. Findling <rainhard.findling@fh-hagenberg.at>
  * Muhammad Muaaz <muhammad.muaaz@usmile.at>
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,6 +26,9 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.IBinder;
 import android.util.Log;
+
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ListMultimap;
 
 import org.whispersystems.libsignal.IdentityKeyPair;
 import org.whispersystems.libsignal.state.PreKeyRecord;
@@ -45,16 +48,18 @@ import org.whispersystems.signalservice.api.push.SignalServiceAddress;
 import org.whispersystems.signalservice.api.websocket.ConnectivityListener;
 import org.whispersystems.signalservice.internal.configuration.SignalServiceConfiguration;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import at.usmile.cormorant.framework.common.TypedServiceBinder;
+import at.usmile.cormorant.framework.group.TrustedDevice;
 
 public class SignalMessagingService extends Service {
 
     private final static String LOG_TAG = SignalMessagingService.class.getSimpleName();
 
-    private static final String PREFERENCE_NAME = "cormorant";
+    private static final String PREFERENCE_NAME = "cormorant1";
 
     private static final String USER_AGENT = "[CORMORANT]";
 
@@ -67,6 +72,9 @@ public class SignalMessagingService extends Service {
 
     private SignalServiceMessagePipe messagePipe;
 
+    private ListMultimap<CormorantMessage.TYPE, CormorantMessageConsumer> messageListeners = ArrayListMultimap.create();
+    private List<DeviceIdListener> deviceIdListeners = new LinkedList<>();
+
     @Override
     public void onCreate() {
         Log.d(LOG_TAG, "MessagingService started");
@@ -74,12 +82,11 @@ public class SignalMessagingService extends Service {
         SharedPreferences prefs = getSharedPreferences(PREFERENCE_NAME, Context.MODE_PRIVATE);
         if (!SignalParameter.isPresent(prefs)) {
             signalParameter = SignalParameter.init();
-            signalParameter.save(prefs);
         } else {
             signalParameter = SignalParameter.load(prefs);
         }
 
-        SignalServiceConfiguration serviceConfiguration = SignalParameter.getServiceConfiguration();
+        SignalServiceConfiguration serviceConfiguration = SignalParameter.getServiceConfiguration(   new CormorantTrustStore(this));
 
 
         accountManager = new SignalServiceAccountManager(serviceConfiguration, signalParameter.getUser(), signalParameter.getPassword(), USER_AGENT);
@@ -92,10 +99,11 @@ public class SignalMessagingService extends Service {
 
                 accountManager.createCormorantAccount(signalParameter.getSignalingKey(), signalParameter.getRegistrationId(), true);
                 accountManager.setPreKeys(identityKey.getPublicKey(), signedPreKeyRecord, oneTimePreKeys);
+
+                signalParameter.save(prefs);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-
         }
 
         messageSender = new SignalServiceMessageSender(serviceConfiguration, signalParameter.getUser(), signalParameter.getPassword(),
@@ -130,12 +138,42 @@ public class SignalMessagingService extends Service {
 
     }
 
-    public void send(String recipient, String msg) throws Exception {
+    public String getDeviceID() {
+        return signalParameter.getUser();
+    }
+
+    public void sendMessage(TrustedDevice device, CormorantMessage cormorantMessage) {
+        Log.w(LOG_TAG, "sendMessage(" + cormorantMessage + ")");
+    }
+
+
+    public void addMessageListener(CormorantMessage.TYPE messageType, CormorantMessageConsumer messageConsumer) {
+        messageListeners.put(messageType, messageConsumer);
+        Log.d(LOG_TAG, "New MessageConsumer added: " + messageConsumer);
+    }
+
+    public void removeMessageListener(CormorantMessage.TYPE messageType, CormorantMessageConsumer messageConsumer) {
+        if (messageListeners.remove(messageType, messageConsumer))
+            Log.d(LOG_TAG, "Removed MessageConsumer: " + messageConsumer);
+        else
+            Log.w(LOG_TAG, "MessageConsumer not found");
+    }
+
+    public void addDeviceIdListener(DeviceIdListener deviceIdListener) {
+        this.deviceIdListeners.add(deviceIdListener);
+    }
+
+    public void removeDeviceIdListener(DeviceIdListener deviceIdListener) {
+        this.deviceIdListeners.remove(deviceIdListener);
+    }
+
+    private void send(String recipient, String msg) throws Exception {
         messageSender.sendMessage(new SignalServiceAddress(recipient),
                 SignalServiceDataMessage.newBuilder().withBody(msg).build());
     }
 
-    public void listen() throws Exception {
+
+    private void listen() throws Exception {
         try {
             messagePipe = messageReceiver.createMessagePipe();
 
@@ -250,37 +288,12 @@ public class SignalMessagingService extends Service {
         }
     }
 
-    public void addMessageListener(CormorantMessage.TYPE messageType, CormorantMessageConsumer messageConsumer) {
-        List<CormorantMessageConsumer> messageConsumers = messageListeners.get(messageType);
-        if (messageConsumers == null) {
-            messageConsumers = new LinkedList<>();
-            messageListeners.put(messageType, messageConsumers);
-        }
-        messageConsumers.add(messageConsumer);
-        Log.d(LOG_TAG, "New MessageConsumer added: " + messageConsumer);
-    }
-
-    public void removeMessageListener(CormorantMessage.TYPE messageType, CormorantMessageConsumer messageConsumer) {
-        List<CormorantMessageConsumer> messageConsumers = messageListeners.get(messageType);
-        if (messageConsumers != null) {
-            messageConsumers.remove(messageConsumer);
-            Log.d(LOG_TAG, "Removed MessageConsumer: " + messageConsumer);
-        } else Log.w(LOG_TAG, "MessageConsumer not found");
-    }
-
     private void updateDeviceId(String jabberId) {
         for (DeviceIdListener eachDeviceIdListener : this.deviceIdListeners) {
             eachDeviceIdListener.setJabberId(jabberId);
         }
     }
 
-    public void addDeviceIdListener(DeviceIdListener deviceIdListener) {
-        this.deviceIdListeners.add(deviceIdListener);
-    }
-
-    public void removeDeviceIdListener(DeviceIdListener deviceIdListener) {
-        this.deviceIdListeners.remove(deviceIdListener);
-    }
 
     private void loadAccount() {
         user = prefs.getString(PREF_XMPP_USER, null);

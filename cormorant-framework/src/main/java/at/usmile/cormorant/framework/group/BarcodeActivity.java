@@ -40,7 +40,7 @@ import com.google.zxing.qrcode.QRCodeWriter;
 
 import at.usmile.cormorant.framework.R;
 import at.usmile.cormorant.framework.common.TypedServiceConnection;
-import at.usmile.cormorant.framework.messaging.MessagingService;
+import at.usmile.cormorant.framework.messaging.SignalMessagingService;
 
 import static at.usmile.cormorant.framework.group.GroupService.CHALLENGE_REQUEST_CANCELED;
 
@@ -60,11 +60,11 @@ public class BarcodeActivity extends AppCompatActivity {
         Intent intent = new Intent(this, GroupService.class);
         bindService(intent, groupService, Context.BIND_AUTO_CREATE);
 
-        Intent messagingServiceIntent = new Intent(this, MessagingService.class);
+        Intent messagingServiceIntent = new Intent(this, SignalMessagingService.class);
 
 
-        bindService(messagingServiceIntent, new TypedServiceConnection<MessagingService>() {
-            public void onServiceConnected(MessagingService service) {
+        bindService(messagingServiceIntent, new TypedServiceConnection<SignalMessagingService>() {
+            public void onServiceConnected(SignalMessagingService service) {
                 ImageView barcodeImageView = (ImageView) findViewById(R.id.barcodeImageView);
                 barcodeImageView.setImageBitmap(encodeAsBitmap(service.getDeviceID()));
                 unbindService(this);

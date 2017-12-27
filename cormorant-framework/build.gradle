@@ -51,9 +51,10 @@ dependencies {
     implementation 'org.igniterealtime.smack:smack-extensions:4.2.1-SNAPSHOT'
     implementation 'com.google.code.gson:gson:2.8.0'
     implementation 'com.journeyapps:zxing-android-embedded:3.4.0'
-    implementation 'com.google.android.gms:play-services-maps:11.6.0'
-    implementation 'com.google.android.gms:play-services-location:11.6.0'
-    implementation 'com.google.android.gms:play-services-nearby:11.6.0'
+    implementation 'com.google.android.gms:play-services-maps:11.8.0'
+    implementation 'com.google.android.gms:play-services-location:11.8.0'
+    implementation 'com.google.android.gms:play-services-nearby:11.8.0'
+    implementation 'com.google.guava:guava:23.6-android'
 
     testImplementation 'junit:junit:4.12'
 }

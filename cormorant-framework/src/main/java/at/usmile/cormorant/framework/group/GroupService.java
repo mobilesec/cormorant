@@ -65,7 +65,7 @@ import at.usmile.cormorant.framework.lock.LockService;
 import at.usmile.cormorant.framework.messaging.CormorantMessage;
 import at.usmile.cormorant.framework.messaging.CormorantMessageConsumer;
 import at.usmile.cormorant.framework.messaging.DeviceIdListener;
-import at.usmile.cormorant.framework.messaging.MessagingService;
+import at.usmile.cormorant.framework.messaging.SignalMessagingService;
 import at.usmile.cormorant.framework.plugin.PluginInfo;
 import at.usmile.cormorant.framework.plugin.PluginManager;
 
@@ -105,7 +105,7 @@ public class GroupService extends Service implements
         initData();
         initLocationComponents();
 
-        bindService(new Intent(this, MessagingService.class), messageService, Context.BIND_AUTO_CREATE);
+        bindService(new Intent(this, SignalMessagingService.class), messageService, Context.BIND_AUTO_CREATE);
         bindService(new Intent(this, LockService.class), lockService, Context.BIND_AUTO_CREATE);
 
         PluginManager.getInstance().addPluginChangeListener(this);
@@ -371,16 +371,16 @@ public class GroupService extends Service implements
         return TypedServiceBinder.from(this);
     }
 
-    private TypedServiceConnection<MessagingService> messageService = new TypedServiceConnection<MessagingService>() {
+    private TypedServiceConnection<SignalMessagingService> messageService = new TypedServiceConnection<SignalMessagingService>() {
 
         @Override
-        public void onServiceConnected(MessagingService service) {
+        public void onServiceConnected(SignalMessagingService service) {
             service.addMessageListener(CormorantMessage.TYPE.GROUP, GroupService.this);
             service.addDeviceIdListener(GroupService.this);
         }
 
         @Override
-        public void onServiceDisconnected(MessagingService service) {
+        public void onServiceDisconnected(SignalMessagingService service) {
             service.removeMessageListener(CormorantMessage.TYPE.GROUP,GroupService.this);
             service.removeDeviceIdListener(GroupService.this);
         }

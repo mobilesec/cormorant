@@ -20,11 +20,9 @@
  */
 package at.usmile.cormorant.framework.group;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.view.ContextMenu;
 import android.view.Menu;
@@ -41,17 +39,16 @@ import android.widget.TextView;
 import at.usmile.cormorant.framework.R;
 import at.usmile.cormorant.framework.common.CommonUtils;
 import at.usmile.cormorant.framework.common.TypedServiceConnection;
-import at.usmile.cormorant.framework.location.CoarseDeviceDistanceHelper;
 import at.usmile.cormorant.framework.location.bluetooth.DistanceHelper;
 import at.usmile.cormorant.framework.lock.DeviceLockCommand;
-import at.usmile.cormorant.framework.messaging.MessagingService;
+import at.usmile.cormorant.framework.messaging.SignalMessagingService;
 
 public class GroupListActivity extends AppCompatActivity implements GroupChangeListener {
 
     public static TrustedDevice selectedDevice;
 
     private ListView listview;
-    private TypedServiceConnection<MessagingService> messagingService = new TypedServiceConnection<>();
+    private TypedServiceConnection<SignalMessagingService> messagingService = new TypedServiceConnection<>();
     private TypedServiceConnection<GroupService> groupService = new TypedServiceConnection<GroupService>() {
 
         @Override
@@ -71,7 +68,7 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
         super.onCreate(savedInstanceState);
 
         bindService(new Intent(this, GroupService.class), groupService, Context.BIND_AUTO_CREATE);
-        bindService(new Intent(this, MessagingService.class), messagingService, Context.BIND_AUTO_CREATE);
+        bindService(new Intent(this, SignalMessagingService.class), messagingService, Context.BIND_AUTO_CREATE);
 
         setContentView(R.layout.activity_group_list);
 

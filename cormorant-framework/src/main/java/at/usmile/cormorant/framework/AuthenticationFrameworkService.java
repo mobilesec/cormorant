@@ -44,7 +44,7 @@ import at.usmile.cormorant.api.model.StatusDataRisk;
 import at.usmile.cormorant.framework.common.TypedServiceConnection;
 import at.usmile.cormorant.framework.group.GroupService;
 import at.usmile.cormorant.framework.lock.LockService;
-import at.usmile.cormorant.framework.messaging.MessagingService;
+import at.usmile.cormorant.framework.messaging.SignalMessagingService;
 import at.usmile.cormorant.framework.module.DecisionModule;
 import at.usmile.cormorant.framework.module.strategies.DecisionStrategyDefault;
 import at.usmile.cormorant.framework.module.strategies.FusionStrategyConfidenceDefault;
@@ -80,7 +80,7 @@ public class AuthenticationFrameworkService extends Service {
     private PluginManager pluginManager = PluginManager.getInstance();
     private DecisionModule decisionModule;
 
-    private TypedServiceConnection<MessagingService> messagingService = new TypedServiceConnection() ;
+    private TypedServiceConnection<SignalMessagingService> messagingService = new TypedServiceConnection() ;
     private TypedServiceConnection<LockService> lockService = new TypedServiceConnection() ;
 
     class PluginMessageHandler extends Handler {
@@ -152,7 +152,7 @@ public class AuthenticationFrameworkService extends Service {
         initDecisionModule();
 
         startService(new Intent(this, GroupService.class));
-        bindService(new Intent(this, MessagingService.class), messagingService, Context.BIND_AUTO_CREATE);
+        bindService(new Intent(this, SignalMessagingService.class), messagingService, Context.BIND_AUTO_CREATE);
         bindService(new Intent(this, LockService.class), lockService, Context.BIND_AUTO_CREATE);
     }
 

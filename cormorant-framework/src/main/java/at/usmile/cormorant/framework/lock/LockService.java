@@ -38,7 +38,7 @@ import at.usmile.cormorant.framework.common.TypedServiceBinder;
 import at.usmile.cormorant.framework.common.TypedServiceConnection;
 import at.usmile.cormorant.framework.messaging.CormorantMessage;
 import at.usmile.cormorant.framework.messaging.CormorantMessageConsumer;
-import at.usmile.cormorant.framework.messaging.MessagingService;
+import at.usmile.cormorant.framework.messaging.SignalMessagingService;
 
 public class LockService extends Service implements CormorantMessageConsumer {
 
@@ -48,14 +48,14 @@ public class LockService extends Service implements CormorantMessageConsumer {
     private List<LockStateListener> lockStateListeners = new LinkedList<>();
     private NotificationManager notificationManager;
 
-    private TypedServiceConnection<MessagingService> messagingService = new TypedServiceConnection<MessagingService>() {
+    private TypedServiceConnection<SignalMessagingService> messagingService = new TypedServiceConnection<SignalMessagingService>() {
         @Override
-        public void onServiceConnected(MessagingService service) {
+        public void onServiceConnected(SignalMessagingService service) {
             service.addMessageListener(CormorantMessage.TYPE.DEVICE, LockService.this);
         }
 
         @Override
-        public void onServiceDisconnected(MessagingService service) {
+        public void onServiceDisconnected(SignalMessagingService service) {
             service.removeMessageListener(CormorantMessage.TYPE.DEVICE, LockService.this);
         }
     };
@@ -63,7 +63,7 @@ public class LockService extends Service implements CormorantMessageConsumer {
     @Override
     public void onCreate() {
         super.onCreate();
-        bindService(new Intent(this, MessagingService.class), messagingService, Context.BIND_AUTO_CREATE);
+        bindService(new Intent(this, SignalMessagingService.class), messagingService, Context.BIND_AUTO_CREATE);
         this.notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         showLockNotification();
     }

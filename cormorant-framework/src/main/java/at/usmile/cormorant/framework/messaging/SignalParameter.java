@@ -22,6 +22,7 @@ package at.usmile.cormorant.framework.messaging;
 
 import android.content.SharedPreferences;
 import android.util.Base64;
+import android.util.Log;
 
 import org.whispersystems.libsignal.IdentityKeyPair;
 import org.whispersystems.libsignal.state.PreKeyRecord;
@@ -46,8 +47,9 @@ import java.util.stream.Collectors;
 
 public class SignalParameter {
 
+    private final static String LOG_TAG = SignalMessagingService.class.getSimpleName();
+
     private static final String URL = "https://cormorant.hintze-it.de/";
-    private static final TrustStore TRUST_STORE = new CormorantTrustStore();
 
     private static final String PREF_SIGNAL_USER = "signalUser";
     private static final String PREF_SIGNAL_PASSWORD = "signalPassword";
@@ -68,8 +70,8 @@ public class SignalParameter {
         return preferences.contains(PREF_SIGNAL_USER);
     }
 
-    public static SignalServiceConfiguration getServiceConfiguration() {
-        return new SignalServiceConfiguration(new SignalServiceUrl[]{new SignalServiceUrl(URL, TRUST_STORE)}, new SignalCdnUrl[]{});
+    public static SignalServiceConfiguration getServiceConfiguration(TrustStore trustStore) {
+        return new SignalServiceConfiguration(new SignalServiceUrl[]{new SignalServiceUrl(URL, trustStore)}, new SignalCdnUrl[]{});
     }
 
     public static SignalParameter init() {
@@ -81,6 +83,8 @@ public class SignalParameter {
         parameter.registrationId = generateRandomInstallId();
         parameter.oneTimePreKeys = KeyHelper.generatePreKeys(0, 100);
         parameter.isNew = true;
+
+        Log.i(LOG_TAG, "Generating new signal parameter for user " + parameter.user);
 
         return parameter;
     }

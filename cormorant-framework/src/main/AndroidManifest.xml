@@ -37,6 +37,10 @@
             android:enabled="true"
             android:exported="false" />
         <service
+            android:name=".messaging.SignalMessagingService"
+            android:enabled="true"
+            android:exported="false" />
+        <service
             android:name=".lock.LockService"
             android:enabled="true"
             android:exported="false" />
