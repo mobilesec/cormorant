@@ -87,12 +87,14 @@ public class SignalMessagingService extends Service {
             signalParameter = SignalParameter.load(prefs);
         }
 
-        SignalServiceConfiguration serviceConfiguration = SignalParameter.getServiceConfiguration(   new CormorantTrustStore(this));
+        Log.i(LOG_TAG, signalParameter.toString());
+
+        SignalServiceConfiguration serviceConfiguration = SignalParameter.getServiceConfiguration(new CormorantTrustStore(this));
 
         accountManager = new SignalServiceAccountManager(serviceConfiguration, signalParameter.getUser(), signalParameter.getPassword(), USER_AGENT);
 
         if (signalParameter.isNew()) {
-           new CreateAccountTask(prefs).execute();
+            new CreateAccountTask(prefs).execute();
         }
 
         messageSender = new SignalServiceMessageSender(serviceConfiguration, signalParameter.getUser(), signalParameter.getPassword(),
@@ -125,6 +127,8 @@ public class SignalMessagingService extends Service {
                     }
                 });
 
+        new ListenTask().execute();
+        new SendMessageTask().execute("15a57286-585d-43df-817a-b3bdb2a3f9ee", "Hello world!");
     }
 
     public String getDeviceID() {
@@ -181,6 +185,33 @@ public class SignalMessagingService extends Service {
         }
     }
 
+    private class SendMessageTask extends AsyncTask<String, Void, Void> {
+
+        @Override
+        protected Void doInBackground(String... strings) {
+            try {
+                send(strings[0], strings[1]);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            return null;
+        }
+    }
+
+    private class ListenTask extends AsyncTask<Void, Void, Void> {
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            try {
+                listen();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            return null;
+        }
+    }
     private class CreateAccountTask extends AsyncTask<String, Void, Void> {
 
         private SharedPreferences prefs;
