@@ -22,7 +22,6 @@ package at.usmile.cormorant.framework.group;
 
 import android.location.Location;
 
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -30,7 +29,6 @@ import java.util.UUID;
 
 import at.usmile.cormorant.framework.location.SimpleLocation;
 import at.usmile.cormorant.framework.location.bluetooth.DistanceHelper;
-import at.usmile.cormorant.framework.plugin.PluginInfo;
 
 public class TrustedDevice {
 
@@ -137,6 +135,9 @@ public class TrustedDevice {
     }
 
     public void setActivePlugins(List<PluginData> activePlugins) {
+        // I don't understand how this can be null at this point?
+        if(this.activePlugins == null) this.activePlugins = new LinkedList<>();
+
         this.activePlugins.clear();
         this.activePlugins.addAll(activePlugins);
     }
