@@ -56,7 +56,6 @@ import java.net.URLEncoder;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -733,7 +732,7 @@ public class PushServiceSocket {
         try {
             ConnectionHolder connectionHolder = getRandom(serviceClients, random);
             OkHttpClient okHttpClient = connectionHolder.getClient().newBuilder()
-                    .connectionSpecs(Collections.singletonList(ConnectionSpec.CLEARTEXT))
+                    //.connectionSpecs(Collections.singletonList(ConnectionSpec.CLEARTEXT))
                     .connectTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS)
                     .readTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS)
                     .build();
