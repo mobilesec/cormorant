@@ -1,8 +1,9 @@
 package org.whispersystems.signalservice.internal.websocket;
 
+import android.util.Log;
+
 import com.google.protobuf.InvalidProtocolBufferException;
 
-import org.whispersystems.libsignal.logging.Log;
 import org.whispersystems.libsignal.util.Pair;
 import org.whispersystems.signalservice.api.push.TrustStore;
 import org.whispersystems.signalservice.api.util.CredentialsProvider;
@@ -118,6 +119,8 @@ public class WebSocketConnection extends WebSocketListener {
     if (client == null) {
       throw new IOException("Connection closed!");
     }
+
+    Log.w(TAG, "WSC readRequest()...");
 
     long startTime = System.currentTimeMillis();
 

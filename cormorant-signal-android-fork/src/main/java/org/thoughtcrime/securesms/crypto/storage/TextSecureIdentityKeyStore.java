@@ -32,6 +32,8 @@ public class TextSecureIdentityKeyStore implements IdentityKeyStore {
 
     @Override
     public int getLocalRegistrationId() {
+        Log.w(TAG,"getLocalRegistrationid");
+
         //return TextSecurePreferences.getLocalRegistrationId(context);
         return 0;
     }
@@ -89,6 +91,8 @@ public class TextSecureIdentityKeyStore implements IdentityKeyStore {
 
     @Override
     public boolean isTrustedIdentity(SignalProtocolAddress address, IdentityKey identityKey, Direction direction) {
+        Log.w(TAG, "isTrustedIdentity + " + address);
+
         synchronized (LOCK) {
             /*
             IdentityDatabase identityDatabase = DatabaseFactory.getIdentityDatabase(context);
