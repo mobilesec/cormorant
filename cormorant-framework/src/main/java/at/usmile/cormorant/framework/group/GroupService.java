@@ -248,7 +248,7 @@ public class GroupService extends Service implements
 
     //TODO Do real synchronisation + how to handle offline devices during sync?
     private void synchronizeGroupInfo() {
-        Log.v(LOG_TAG, "Synching new group: " + group);
+        Log.v(LOG_TAG, "Syncing new group: " + group);
         for (TrustedDevice device : group) {
             if (!device.equals(getSelf())) {
                 messageService.get().sendMessage(device, new GroupUpdateMessage(group));
@@ -257,7 +257,7 @@ public class GroupService extends Service implements
     }
 
     private void synchronizeGroupInfo(TrustedDevice removedDevice) {
-        Log.d(LOG_TAG, "Synching device removal to: " + removedDevice);
+        Log.d(LOG_TAG, "Syncing device removal to: " + removedDevice);
         messageService.get().sendMessage(removedDevice, new GroupUpdateMessage(group));
         synchronizeGroupInfo();
     }
