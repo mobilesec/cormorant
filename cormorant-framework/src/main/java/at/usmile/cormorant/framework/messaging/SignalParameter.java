@@ -80,7 +80,7 @@ public class SignalParameter {
         SignalParameter parameter = new SignalParameter();
 
         parameter.user = UUID.randomUUID().toString();
-        parameter.password = "Lk1hr14"; //getSecret(5); // Why does the server not accept the password if it is generated? 
+        parameter.password = getSecret(10);
         parameter.signalingKey = getSecret(52);
         parameter.registrationId = generateRandomInstallId();
         parameter.identityKey = KeyHelper.generateIdentityKeyPair();
@@ -115,19 +115,19 @@ public class SignalParameter {
                 .putString(PREF_SIGNAL_PASSWORD, password)
                 .putString(PREF_SIGNAL_KEY, signalingKey)
                 .putInt(PREF_SIGNAL_REG_ID, registrationId)
-                .putString(PREF_SIGNAL_IDENTITY_KEY, Base64.encodeToString(identityKey.serialize(), 0))
+                .putString(PREF_SIGNAL_IDENTITY_KEY, Base64.encodeToString(identityKey.serialize(), Base64.NO_WRAP))
                 .putString(PREF_SIGNAL_PRE_KEYS, asString(oneTimePreKeys))
                 .commit();
     }
 
     private static String asString(List<PreKeyRecord> oneTimePreKey) {
-        return oneTimePreKey.stream().map(k -> k.serialize()).map(b -> Base64.encodeToString(b, 0)).collect(Collectors.joining(","));
+        return oneTimePreKey.stream().map(k -> k.serialize()).map(b -> Base64.encodeToString(b, Base64.NO_WRAP)).collect(Collectors.joining(","));
     }
 
     private static List<PreKeyRecord> listFromString(String string) {
         List<PreKeyRecord> list = new ArrayList<>();
 
-        Arrays.stream(string.split(",")).map(s -> Base64.decode(s, 0)).forEach(b -> {
+        Arrays.stream(string.split(",")).map(s -> Base64.decode(s, Base64.NO_WRAP)).forEach(b -> {
             try {
                 list.add(new PreKeyRecord(b));
             } catch (IOException e) {
@@ -150,7 +150,7 @@ public class SignalParameter {
     }
 
     private static String getSecret(int size) {
-        return Base64.encodeToString(getSecretBytes(size), 0);
+        return Base64.encodeToString(getSecretBytes(size), Base64.NO_WRAP);
     }
 
     private static SecureRandom getSecureRandom() {
