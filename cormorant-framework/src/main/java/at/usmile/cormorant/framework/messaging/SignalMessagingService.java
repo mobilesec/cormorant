@@ -127,7 +127,7 @@ public class SignalMessagingService extends Service {
                     }
                 });
 
-        new SendMessageTask().execute("86b08d6d-2c18-47c1-8c6f-0b24dc5da54e", "Hello world!");
+        //new SendMessageTask().execute("86b08d6d-2c18-47c1-8c6f-0b24dc5da54e", "Hello world!");
         new ListenTask().execute();
     }
 

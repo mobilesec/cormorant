@@ -80,7 +80,7 @@ public class SignalParameter {
         SignalParameter parameter = new SignalParameter();
 
         parameter.user = UUID.randomUUID().toString();
-        parameter.password = getSecret(20);
+        parameter.password = "Lk1hr14"; //getSecret(5); // Why does the server not accept the password if it is generated? 
         parameter.signalingKey = getSecret(52);
         parameter.registrationId = generateRandomInstallId();
         parameter.identityKey = KeyHelper.generateIdentityKeyPair();
