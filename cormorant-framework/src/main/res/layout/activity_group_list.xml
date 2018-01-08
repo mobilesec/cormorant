@@ -11,11 +11,19 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context=".group.GroupListActivity">
 
+    <Button
+        android:id="@+id/button2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="send"
+        android:text="Send" />
+
     <ListView
         android:id="@+id/group_list_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_alignParentBottom="true"
-        android:layout_alignParentEnd="true"/>
+        android:layout_alignParentEnd="true"
+        android:layout_below="@+id/button2" />
 
 </RelativeLayout>

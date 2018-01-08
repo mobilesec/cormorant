@@ -31,7 +31,10 @@ import android.util.Log;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 
+import org.thoughtcrime.securesms.crypto.IdentityKeyUtil;
+import org.thoughtcrime.securesms.crypto.PreKeyUtil;
 import org.thoughtcrime.securesms.crypto.storage.SignalProtocolStoreImpl;
+import org.whispersystems.libsignal.IdentityKeyPair;
 import org.whispersystems.libsignal.state.PreKeyRecord;
 import org.whispersystems.libsignal.state.SignedPreKeyRecord;
 import org.whispersystems.libsignal.util.KeyHelper;
@@ -80,6 +83,7 @@ public class SignalMessagingService extends Service {
         SharedPreferences prefs = getSharedPreferences(PREFERENCE_NAME, Context.MODE_PRIVATE);
         if (!SignalParameter.isPresent(prefs)) {
             signalParameter = SignalParameter.init();
+            IdentityKeyUtil.saveIdentityKeys(this, signalParameter.getIdentityKey());
         } else {
             signalParameter = SignalParameter.load(prefs);
         }
@@ -105,6 +109,11 @@ public class SignalMessagingService extends Service {
 
                     @Override
                     public void onDisconnected() {
+                        try {
+                            listen();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                         System.out.println(
                                 "SignaleMessagingService.SignaleMessagingService(...).new ConnectivityListener() {...}.onDisconnected()");
                     }
@@ -160,7 +169,7 @@ public class SignalMessagingService extends Service {
         this.deviceIdListeners.remove(deviceIdListener);
     }
 
-    private void send(String recipient, String msg) throws Exception {
+    public void send(String recipient, String msg) throws Exception {
         Log.d(LOG_TAG, "send message to " + recipient);
 
         messageSender.sendMessage(new SignalServiceAddress(recipient),
@@ -244,12 +253,9 @@ public class SignalMessagingService extends Service {
         @Override
         protected Void doInBackground(String... strings) {
             try {
-                List<PreKeyRecord> oneTimePreKeys = KeyHelper.generatePreKeys(0, 100);
-                SignedPreKeyRecord signedPreKeyRecord = KeyHelper.generateSignedPreKey(signalParameter.getIdentityKey(), 0);
-
+                SignedPreKeyRecord signedPreKey = PreKeyUtil.generateSignedPreKey(SignalMessagingService.this, signalParameter.getIdentityKey(), true);
                 accountManager.createCormorantAccount(signalParameter.getSignalingKey(), signalParameter.getRegistrationId(), true);
-                accountManager.setPreKeys(signalParameter.getIdentityKey().getPublicKey(), signedPreKeyRecord, oneTimePreKeys);
-
+                accountManager.setPreKeys(signalParameter.getIdentityKey().getPublicKey(), signedPreKey, signalParameter.getOneTimePreKeys());
                 signalParameter.save(prefs);
             } catch (Exception e) {
                 throw new RuntimeException(e);

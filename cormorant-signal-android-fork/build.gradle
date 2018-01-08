@@ -39,6 +39,11 @@ license {
 dependencies {
     implementation project(':cormorant-api')
 
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.9.3'
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.9.3'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.9.3'
+
+
     implementation "org.whispersystems:signal-protocol-java:2.6.2"
     implementation 'com.android.support:appcompat-v7:' + global_appCompatVersion
 

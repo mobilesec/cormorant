@@ -80,6 +80,14 @@ public class IdentityKeyUtil {
     }
   }
 
+  public static void saveIdentityKeys(Context context, IdentityKeyPair identityKeyPair) {
+    IdentityKey  djbIdentityKey = identityKeyPair.getPublicKey();
+    ECPrivateKey djbPrivateKey  = identityKeyPair.getPrivateKey();
+
+    save(context, IDENTITY_PUBLIC_KEY_PREF, Base64.encodeBytes(djbIdentityKey.serialize()));
+    save(context, IDENTITY_PRIVATE_KEY_PREF, Base64.encodeBytes(djbPrivateKey.serialize()));
+  }
+
   public static void generateIdentityKeys(Context context) {
     ECKeyPair    djbKeyPair     = Curve.generateKeyPair();
     IdentityKey  djbIdentityKey = new IdentityKey(djbKeyPair.getPublicKey());

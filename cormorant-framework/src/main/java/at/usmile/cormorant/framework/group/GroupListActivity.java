@@ -22,6 +22,7 @@ package at.usmile.cormorant.framework.group;
 
 import android.content.Context;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.ContextMenu;
@@ -62,6 +63,22 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
             service.removeGroupChangeListener(GroupListActivity.this);
         }
     };
+
+    public void send(View view) {
+        System.out.println("Execute Send");
+        new AsyncTask<Void, Void, Void>() {
+            @Override
+            protected Void doInBackground(Void... voids) {
+                try {
+                    System.out.println("Background Send");
+                    messagingService.get().send("cc046161-82b0-4ae2-a472-9fc424822fa5", "TestMessage");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                return null;
+            }
+        }.execute();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
