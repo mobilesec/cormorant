@@ -30,6 +30,10 @@ android {
             storeFile file('../debug.keystore')
         }
     }
+    compileOptions {
+        targetCompatibility 1.8
+        sourceCompatibility 1.8
+    }
 }
 
 license {

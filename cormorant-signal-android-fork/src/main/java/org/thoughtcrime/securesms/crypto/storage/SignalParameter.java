@@ -1,24 +1,24 @@
 /**
  * Copyright 2016 - 2017
- *
+ * <p>
  * Daniel Hintze <daniel.hintze@fhdw.de>
  * Sebastian Scholz <sebastian.scholz@fhdw.de>
  * Rainhard D. Findling <rainhard.findling@fh-hagenberg.at>
  * Muhammad Muaaz <muhammad.muaaz@usmile.at>
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package at.usmile.cormorant.framework.messaging;
+package org.thoughtcrime.securesms.crypto.storage;
 
 import android.content.SharedPreferences;
 import android.util.Base64;
@@ -32,10 +32,9 @@ import org.whispersystems.signalservice.api.push.TrustStore;
 import org.whispersystems.signalservice.internal.configuration.SignalCdnUrl;
 import org.whispersystems.signalservice.internal.configuration.SignalServiceConfiguration;
 import org.whispersystems.signalservice.internal.configuration.SignalServiceUrl;
+import org.whispersystems.signalservice.internal.util.Util;
 
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -48,9 +47,11 @@ import java.util.stream.Collectors;
 
 public class SignalParameter {
 
-    private final static String LOG_TAG = SignalMessagingService.class.getSimpleName();
+    private final static String LOG_TAG = SignalParameter.class.getSimpleName();
 
     private static final String URL = "https://cormorant.hintze-it.de";
+
+    public static final String PREFERENCE_NAME = "cormorant1";
 
     private static final String PREF_SIGNAL_USER = "signalUser";
     private static final String PREF_SIGNAL_PASSWORD = "signalPassword";
@@ -67,6 +68,7 @@ public class SignalParameter {
     private String signalingKey;
     private int registrationId;
     private boolean isNew;
+    private String gcmId;
 
     public static boolean isPresent(SharedPreferences preferences) {
         return preferences.contains(PREF_SIGNAL_USER);
@@ -80,8 +82,8 @@ public class SignalParameter {
         SignalParameter parameter = new SignalParameter();
 
         parameter.user = UUID.randomUUID().toString();
-        parameter.password = getSecret(10);
-        parameter.signalingKey = getSecret(52);
+        parameter.password = Util.getSecret(10);
+        parameter.signalingKey = Util.getSecret(52);
         parameter.registrationId = generateRandomInstallId();
         parameter.identityKey = KeyHelper.generateIdentityKeyPair();
         parameter.oneTimePreKeys = KeyHelper.generatePreKeys(0, 100);
@@ -143,24 +145,6 @@ public class SignalParameter {
         return (int) Math.random() * Integer.MAX_VALUE;
     }
 
-    private static byte[] getSecretBytes(int size) {
-        byte[] secret = new byte[size];
-        getSecureRandom().nextBytes(secret);
-        return secret;
-    }
-
-    private static String getSecret(int size) {
-        return Base64.encodeToString(getSecretBytes(size), Base64.NO_WRAP);
-    }
-
-    private static SecureRandom getSecureRandom() {
-        try {
-            return SecureRandom.getInstance("SHA1PRNG");
-        } catch (NoSuchAlgorithmException e) {
-            throw new AssertionError(e);
-        }
-    }
-
     public String getUser() {
         return user;
     }
@@ -189,6 +173,10 @@ public class SignalParameter {
         return isNew;
     }
 
+    public String getGcmId() {
+        return gcmId;
+    }
+
     @Override
     public String toString() {
         return "SignalParameter{" +
@@ -199,5 +187,9 @@ public class SignalParameter {
                 ", registrationId=" + registrationId +
                 ", isNew=" + isNew +
                 '}';
+    }
+
+    public void setGcmId(String gcmId) {
+        this.gcmId = gcmId;
     }
 }

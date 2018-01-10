@@ -1,15 +1,21 @@
 package org.thoughtcrime.securesms.crypto.storage;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.util.Log;
 
 import org.thoughtcrime.securesms.crypto.IdentityKeyUtil;
+import org.thoughtcrime.securesms.crypto.SessionUtil;
+import org.thoughtcrime.securesms.crypto.storage.IdentityRecord.VerifiedStatus;
+import org.thoughtcrime.securesms.util.Base64;
 import org.whispersystems.libsignal.IdentityKey;
 import org.whispersystems.libsignal.IdentityKeyPair;
+import org.whispersystems.libsignal.InvalidKeyException;
 import org.whispersystems.libsignal.SignalProtocolAddress;
 import org.whispersystems.libsignal.state.IdentityKeyStore;
 import org.whispersystems.libsignal.util.guava.Optional;
 
+import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 public class TextSecureIdentityKeyStore implements IdentityKeyStore {
@@ -21,8 +27,14 @@ public class TextSecureIdentityKeyStore implements IdentityKeyStore {
 
     private final Context context;
 
+    private SignalParameter parameter;
+
     public TextSecureIdentityKeyStore(Context context) {
         this.context = context;
+
+        SharedPreferences prefs = context.getSharedPreferences(SignalParameter.PREFERENCE_NAME, Context.MODE_PRIVATE);
+
+        parameter = SignalParameter.load(prefs);
     }
 
     @Override
@@ -32,56 +44,71 @@ public class TextSecureIdentityKeyStore implements IdentityKeyStore {
 
     @Override
     public int getLocalRegistrationId() {
-        Log.w(TAG,"getLocalRegistrationid");
-
-        //return TextSecurePreferences.getLocalRegistrationId(context);
-        return 0;
+        return parameter.getRegistrationId();
     }
 
     public boolean saveIdentity(SignalProtocolAddress address, IdentityKey identityKey, boolean nonBlockingApproval) {
-        /*
+        Log.w(TAG, "saveIdentity + " + address);
 
-        synchronized (LOCK) {
-            IdentityDatabase identityDatabase = DatabaseFactory.getIdentityDatabase(context);
-            Address signalAddress = Address.fromExternal(context, address.getName());
-            Optional<IdentityRecord> identityRecord = identityDatabase.getIdentity(signalAddress);
+        SharedPreferences prefs = context.getSharedPreferences(SignalParameter.PREFERENCE_NAME, Context.MODE_PRIVATE);
 
-            if (!identityRecord.isPresent()) {
-                Log.w(TAG, "Saving new identity...");
-                identityDatabase.saveIdentity(signalAddress, identityKey, VerifiedStatus.DEFAULT, true, System.currentTimeMillis(), nonBlockingApproval);
-                return false;
-            }
+        String key = "identity_" + address.getName() + "_key";
+        String status = "identity_" + address.getName() + "_status";
 
-            if (!identityRecord.get().getIdentityKey().equals(identityKey)) {
-                Log.w(TAG, "Replacing existing identity...");
-                VerifiedStatus verifiedStatus;
+        try {
+            synchronized (LOCK) {
+                if (!prefs.contains(key)) {
+                    Log.w(TAG, "Saving new identity...");
 
-                if (identityRecord.get().getVerifiedStatus() == VerifiedStatus.VERIFIED ||
-                        identityRecord.get().getVerifiedStatus() == VerifiedStatus.UNVERIFIED) {
-                    verifiedStatus = VerifiedStatus.UNVERIFIED;
-                } else {
-                    verifiedStatus = VerifiedStatus.DEFAULT;
+                    prefs.edit()
+                            .putString(key, Base64.encodeBytes(identityKey.serialize()))
+                            .putString(status, IdentityRecord.VerifiedStatus.DEFAULT.name())
+                            .commit();
+
+                    return false;
                 }
 
-                identityDatabase.saveIdentity(signalAddress, identityKey, verifiedStatus, false, System.currentTimeMillis(), nonBlockingApproval);
-                IdentityUtil.markIdentityUpdate(context, Recipient.from(context, signalAddress, true));
-                SessionUtil.archiveSiblingSessions(context, address);
-                return true;
-            }
+                IdentityKey storedIdentityKey = new IdentityKey(Base64.decode(prefs.getString(key, "")), 0);
+                IdentityRecord.VerifiedStatus storedVerifiedStatus = IdentityRecord.VerifiedStatus.valueOf(prefs.getString(status, ""));
 
-            if (isNonBlockingApprovalRequired(identityRecord.get())) {
-                Log.w(TAG, "Setting approval status...");
-                identityDatabase.setApproval(signalAddress, nonBlockingApproval);
+                if (!storedIdentityKey.equals(identityKey)) {
+                    Log.w(TAG, "Replacing existing identity...");
+                    IdentityRecord.VerifiedStatus verifiedStatus;
+
+                    if (storedVerifiedStatus == VerifiedStatus.VERIFIED || storedVerifiedStatus == VerifiedStatus.UNVERIFIED) {
+                        verifiedStatus = VerifiedStatus.UNVERIFIED;
+                    } else {
+                        verifiedStatus = VerifiedStatus.DEFAULT;
+                    }
+
+                    prefs.edit()
+                            .putString(key, Base64.encodeBytes(identityKey.serialize()))
+                            .putString(status, verifiedStatus.name())
+                            .commit();
+
+                    //IdentityUtil.markIdentityUpdate(context, Recipient.from(context, signalAddress, true));
+                    SessionUtil.archiveSiblingSessions(context, address);
+                    return true;
+                }
+
+                /*if (isNonBlockingApprovalRequired(storedIdentityKey)) {
+                    Log.w(TAG, "Setting approval status...");
+                    identityDatabase.setApproval(signalAddress, nonBlockingApproval);
+                    return false;
+                }*/
+
                 return false;
+
             }
 
-            return false;
 
+        } catch (InvalidKeyException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
-        */
-
-        return true;
+        return false;
     }
 
     @Override
@@ -90,10 +117,22 @@ public class TextSecureIdentityKeyStore implements IdentityKeyStore {
     }
 
     @Override
-    public boolean isTrustedIdentity(SignalProtocolAddress address, IdentityKey identityKey, Direction direction) {
+    public boolean isTrustedIdentity(SignalProtocolAddress address, IdentityKey
+            identityKey, Direction direction) {
         Log.w(TAG, "isTrustedIdentity + " + address);
 
         synchronized (LOCK) {
+
+       /*         SharedPreferences prefs = context.getSharedPreferences(SignalParameter.PREFERENCE_NAME, Context.MODE_PRIVATE);
+
+                String key = "identity_" + address.getName() + "_key";
+                String status = "identity_" + address.getName() + "_status";
+
+                IdentityKey storedIdentityKey = new IdentityKey(Base64.decode(prefs.getString(key, "")), 0);
+                IdentityRecord.VerifiedStatus storedVerifiedStatus = IdentityRecord.VerifiedStatus.valueOf(prefs.getString(status, ""));
+*/
+
+
             /*
             IdentityDatabase identityDatabase = DatabaseFactory.getIdentityDatabase(context);
             String ourNumber = TextSecurePreferences.getLocalNumber(context);
@@ -106,8 +145,8 @@ public class TextSecureIdentityKeyStore implements IdentityKeyStore {
 
             switch (direction) {
                 case SENDING:
-                      return true;
-                    //return isTrustedForSending(identityKey, identityDatabase.getIdentity(theirAddress));
+                    return true;
+                //return isTrustedForSending(identityKey, identityDatabase.getIdentity(theirAddress));
                 case RECEIVING:
                     return true;
                 default:

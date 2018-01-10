@@ -1,17 +1,17 @@
 /**
  * Copyright 2016 - 2017
- *
+ * <p>
  * Daniel Hintze <daniel.hintze@fhdw.de>
  * Sebastian Scholz <sebastian.scholz@fhdw.de>
  * Rainhard D. Findling <rainhard.findling@fh-hagenberg.at>
  * Muhammad Muaaz <muhammad.muaaz@usmile.at>
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,16 +28,16 @@ import android.os.AsyncTask;
 import android.os.IBinder;
 import android.util.Log;
 
+import com.google.android.gms.iid.InstanceID;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 
 import org.thoughtcrime.securesms.crypto.IdentityKeyUtil;
 import org.thoughtcrime.securesms.crypto.PreKeyUtil;
+import org.thoughtcrime.securesms.crypto.storage.SignalParameter;
 import org.thoughtcrime.securesms.crypto.storage.SignalProtocolStoreImpl;
-import org.whispersystems.libsignal.IdentityKeyPair;
-import org.whispersystems.libsignal.state.PreKeyRecord;
+import org.whispersystems.libsignal.InvalidVersionException;
 import org.whispersystems.libsignal.state.SignedPreKeyRecord;
-import org.whispersystems.libsignal.util.KeyHelper;
 import org.whispersystems.libsignal.util.guava.Optional;
 import org.whispersystems.signalservice.api.SignalServiceAccountManager;
 import org.whispersystems.signalservice.api.SignalServiceMessagePipe;
@@ -53,6 +53,7 @@ import org.whispersystems.signalservice.internal.configuration.SignalServiceConf
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import at.usmile.cormorant.framework.common.TypedServiceBinder;
 import at.usmile.cormorant.framework.group.TrustedDevice;
@@ -60,8 +61,6 @@ import at.usmile.cormorant.framework.group.TrustedDevice;
 public class SignalMessagingService extends Service {
 
     private final static String LOG_TAG = SignalMessagingService.class.getSimpleName();
-
-    private static final String PREFERENCE_NAME = "cormorant1";
 
     private static final String USER_AGENT = "[CORMORANT]";
 
@@ -75,12 +74,13 @@ public class SignalMessagingService extends Service {
 
     private ListMultimap<CormorantMessage.TYPE, CormorantMessageConsumer> messageListeners = ArrayListMultimap.create();
     private List<DeviceIdListener> deviceIdListeners = new LinkedList<>();
+    private SignalProtocolStoreImpl signalProtocolStore;
 
     @Override
     public void onCreate() {
         Log.d(LOG_TAG, "MessagingService started");
 
-        SharedPreferences prefs = getSharedPreferences(PREFERENCE_NAME, Context.MODE_PRIVATE);
+        SharedPreferences prefs = getSharedPreferences(SignalParameter.PREFERENCE_NAME, Context.MODE_PRIVATE);
         if (!SignalParameter.isPresent(prefs)) {
             signalParameter = SignalParameter.init();
             IdentityKeyUtil.saveIdentityKeys(this, signalParameter.getIdentityKey());
@@ -98,7 +98,7 @@ public class SignalMessagingService extends Service {
             new CreateAccountTask(prefs).execute();
         }
 
-        SignalProtocolStoreImpl signalProtocolStore = new SignalProtocolStoreImpl(this);
+        signalProtocolStore = new SignalProtocolStoreImpl(this);
 
 
         messageSender = new SignalServiceMessageSender(serviceConfiguration, signalParameter.getUser(), signalParameter.getPassword(),
@@ -109,11 +109,6 @@ public class SignalMessagingService extends Service {
 
                     @Override
                     public void onDisconnected() {
-                        try {
-                            listen();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
                         System.out.println(
                                 "SignaleMessagingService.SignaleMessagingService(...).new ConnectivityListener() {...}.onDisconnected()");
                     }
@@ -136,6 +131,8 @@ public class SignalMessagingService extends Service {
                     }
                 });
 
+        Log.w(LOG_TAG, signalParameter.toString());
+
         //new SendMessageTask().execute("86b08d6d-2c18-47c1-8c6f-0b24dc5da54e", "Hello world!");
         new ListenTask().execute();
     }
@@ -145,7 +142,7 @@ public class SignalMessagingService extends Service {
     }
 
     public void sendMessage(TrustedDevice device, CormorantMessage cormorantMessage) {
-        Log.w(LOG_TAG, "sendMessage(" + cormorantMessage + ")");
+        //Log.w(LOG_TAG, "sendMessage(" + cormorantMessage + ")");
     }
 
 
@@ -178,40 +175,49 @@ public class SignalMessagingService extends Service {
 
 
     private void listen() throws Exception {
-        try {
+        while (true) {
+            Log.w(LOG_TAG, "Waiting for websocket state change....");
+            //waitForConnectionNecessary();
+
+            Log.w(LOG_TAG, "Making websocket connection....");
             messagePipe = messageReceiver.createMessagePipe();
 
-            Log.w(LOG_TAG, "Reading message...");
-            messagePipe.read(1, TimeUnit.MINUTES,
-                    envelope -> {
-                        Log.w(LOG_TAG, "Retrieved envelope! " + envelope.getSource());
+            SignalServiceMessagePipe localPipe = messagePipe;
 
-                        SignalProtocolStoreImpl signalProtocolStore = new SignalProtocolStoreImpl(this);
+            try {
+                while (true) {
+                    try {
+                        Log.w(LOG_TAG, "Reading message...");
+                        localPipe.read(1, TimeUnit.MINUTES,
+                                envelope -> {
+                                    Log.w(LOG_TAG, "Retrieved envelope! " + envelope.getSource());
 
-                        SignalServiceCipher cipher = new SignalServiceCipher(new SignalServiceAddress(signalParameter.getUser()),
-                                signalProtocolStore);
-                        try {
-                            SignalServiceContent message = cipher.decrypt(envelope);
-                            System.out.println("Received message: " + message.getDataMessage().get().getBody().get());
-                        }catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
-                    });
+                                    SignalServiceCipher cipher = new SignalServiceCipher(new SignalServiceAddress(signalParameter.getUser()), signalProtocolStore);
+                                    try {
+                                        Log.w(LOG_TAG, "Decrypting" );
+                                        SignalServiceContent message = cipher.decrypt(envelope);
+                                        System.out.println("Received message: " + message.getDataMessage().get().getBody().get());
+                                    } catch (Exception e) {
+                                        Log.w(LOG_TAG, e);
+                                        throw new RuntimeException(e);
+                                    }
+                                });
+                    } catch (TimeoutException e) {
+                        Log.w(LOG_TAG, "Application level read timeout...");
+                    } catch (InvalidVersionException e) {
+                        Log.w(LOG_TAG, e);
+                    }
+                }
+            } catch (Throwable e) {
+                Log.w(LOG_TAG, e);
+            } finally {
+                Log.w(LOG_TAG, "Shutting down pipe...");
+                localPipe.shutdown();
+            }
 
-
-    /*        while (true) {
-                SignalServiceEnvelope envelope = messagePipe.read(10, TimeUnit.SECONDS);
-                SignalServiceCipher cipher = new SignalServiceCipher(new SignalServiceAddress(signalParameter.getUser()),
-                        new InMemorySignalProtocolStore(signalParameter.getIdentityKey(), registrationId));
-                SignalServiceContent message = cipher.decrypt(envelope);
-
-                System.out.println("Received message: " + message.getDataMessage().get().getBody().get());
-            }*/
-
-        } finally {
-            if (messagePipe != null)
-                messagePipe.shutdown();
+            Log.w(LOG_TAG, "Looping...");
         }
+
     }
 
     private class SendMessageTask extends AsyncTask<String, Void, Void> {
@@ -253,16 +259,32 @@ public class SignalMessagingService extends Service {
         @Override
         protected Void doInBackground(String... strings) {
             try {
+                String authorizedEntity = "457730743558"; // Project id from Google Developer Console
+                String scope = "GCM"; // e.g. communicating using GCM, but you can use any
+                // URL-safe characters up to a maximum of 1000, or
+                // you can also leave it blank.
+                String gcmToken = InstanceID.getInstance(SignalMessagingService.this).getToken(authorizedEntity, scope);
+
+
                 SignedPreKeyRecord signedPreKey = PreKeyUtil.generateSignedPreKey(SignalMessagingService.this, signalParameter.getIdentityKey(), true);
                 accountManager.createCormorantAccount(signalParameter.getSignalingKey(), signalParameter.getRegistrationId(), true);
                 accountManager.setPreKeys(signalParameter.getIdentityKey().getPublicKey(), signedPreKey, signalParameter.getOneTimePreKeys());
+                accountManager.setGcmId(Optional.of(gcmToken));
+                signalParameter.setGcmId(gcmToken);
                 signalParameter.save(prefs);
+
+                signalProtocolStore.storeSignedPreKey(0, signedPreKey);
+                for (int i = 0; i < signalParameter.getOneTimePreKeys().size(); i++) {
+                    signalProtocolStore.storePreKey(i, signalParameter.getOneTimePreKeys().get(i));
+                }
+
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
 
             return null;
         }
+
     }
 
     /*

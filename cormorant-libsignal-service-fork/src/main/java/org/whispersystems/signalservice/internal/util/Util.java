@@ -1,6 +1,6 @@
 /**
  * Copyright (C) 2014-2016 Open Whisper Systems
- *
+ * <p>
  * Licensed according to the LICENSE file in this repository.
  */
 
@@ -18,121 +18,126 @@ import java.util.List;
 
 public class Util {
 
-  public static byte[] join(byte[]... input) {
-    try {
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      for (byte[] part : input) {
-        baos.write(part);
-      }
+    public static byte[] join(byte[]... input) {
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            for (byte[] part : input) {
+                baos.write(part);
+            }
 
-      return baos.toByteArray();
-    } catch (IOException e) {
-      throw new AssertionError(e);
-    }
-  }
-
-  public static byte[][] split(byte[] input, int firstLength, int secondLength) {
-    byte[][] parts = new byte[2][];
-
-    parts[0] = new byte[firstLength];
-    System.arraycopy(input, 0, parts[0], 0, firstLength);
-
-    parts[1] = new byte[secondLength];
-    System.arraycopy(input, firstLength, parts[1], 0, secondLength);
-
-    return parts;
-  }
-
-  public static byte[] trim(byte[] input, int length) {
-    byte[] result = new byte[length];
-    System.arraycopy(input, 0, result, 0, result.length);
-
-    return result;
-  }
-
-  public static boolean isEmpty(String value) {
-    return value == null || value.trim().length() == 0;
-  }
-
-  public static byte[] getSecretBytes(int size) {
-    try {
-      byte[] secret = new byte[size];
-      SecureRandom.getInstance("SHA1PRNG").nextBytes(secret);
-      return secret;
-    } catch (NoSuchAlgorithmException e) {
-      throw new AssertionError(e);
-    }
-  }
-
-  public static byte[] getRandomLengthBytes(int maxSize) {
-    SecureRandom secureRandom = new SecureRandom();
-    byte[]       result       = new byte[secureRandom.nextInt(maxSize) + 1];
-    secureRandom.nextBytes(result);
-    return result;
-  }
-
-  public static String readFully(InputStream in) throws IOException {
-    ByteArrayOutputStream bout = new ByteArrayOutputStream();
-    byte[] buffer              = new byte[4096];
-    int read;
-
-    while ((read = in.read(buffer)) != -1) {
-      bout.write(buffer, 0, read);
+            return baos.toByteArray();
+        } catch (IOException e) {
+            throw new AssertionError(e);
+        }
     }
 
-    in.close();
+    public static byte[][] split(byte[] input, int firstLength, int secondLength) {
+        byte[][] parts = new byte[2][];
 
-    return new String(bout.toByteArray());
-  }
+        parts[0] = new byte[firstLength];
+        System.arraycopy(input, 0, parts[0], 0, firstLength);
 
-  public static void readFully(InputStream in, byte[] buffer) throws IOException {
-    int offset = 0;
+        parts[1] = new byte[secondLength];
+        System.arraycopy(input, firstLength, parts[1], 0, secondLength);
 
-    for (;;) {
-      int read = in.read(buffer, offset, buffer.length - offset);
-
-      if (read + offset < buffer.length) offset += read;
-      else                		           return;
-    }
-  }
-
-  public static void copy(InputStream in, OutputStream out) throws IOException {
-    byte[] buffer = new byte[4096];
-    int read;
-
-    while ((read = in.read(buffer)) != -1) {
-      out.write(buffer, 0, read);
+        return parts;
     }
 
-    in.close();
-    out.close();
-  }
+    public static byte[] trim(byte[] input, int length) {
+        byte[] result = new byte[length];
+        System.arraycopy(input, 0, result, 0, result.length);
 
-  public static void sleep(long millis) {
-    try {
-      Thread.sleep(millis);
-    } catch (InterruptedException e) {
-      throw new AssertionError(e);
+        return result;
     }
-  }
 
-  public static void wait(Object lock, long millis) {
-    try {
-      lock.wait(millis);
-    } catch (InterruptedException e) {
-      throw new AssertionError(e);
+    public static boolean isEmpty(String value) {
+        return value == null || value.trim().length() == 0;
     }
-  }
 
-  public static int toIntExact(long value) {
-    if ((int)value != value) {
-      throw new ArithmeticException("integer overflow");
+    public static byte[] getSecretBytes(int size) {
+        try {
+            byte[] secret = new byte[size];
+            SecureRandom.getInstance("SHA1PRNG").nextBytes(secret);
+            return secret;
+        } catch (NoSuchAlgorithmException e) {
+            throw new AssertionError(e);
+        }
     }
-    return (int)value;
-  }
 
-  public static <T> List<T> immutableList(T... elements) {
-    return Collections.unmodifiableList(Arrays.asList(elements.clone()));
-  }
+    public static String getSecret(int size) {
+        byte[] secret = getSecretBytes(size);
+        return Base64.encodeBytes(secret);
+    }
+
+    public static byte[] getRandomLengthBytes(int maxSize) {
+        SecureRandom secureRandom = new SecureRandom();
+        byte[] result = new byte[secureRandom.nextInt(maxSize) + 1];
+        secureRandom.nextBytes(result);
+        return result;
+    }
+
+    public static String readFully(InputStream in) throws IOException {
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        byte[] buffer = new byte[4096];
+        int read;
+
+        while ((read = in.read(buffer)) != -1) {
+            bout.write(buffer, 0, read);
+        }
+
+        in.close();
+
+        return new String(bout.toByteArray());
+    }
+
+    public static void readFully(InputStream in, byte[] buffer) throws IOException {
+        int offset = 0;
+
+        for (; ; ) {
+            int read = in.read(buffer, offset, buffer.length - offset);
+
+            if (read + offset < buffer.length) offset += read;
+            else return;
+        }
+    }
+
+    public static void copy(InputStream in, OutputStream out) throws IOException {
+        byte[] buffer = new byte[4096];
+        int read;
+
+        while ((read = in.read(buffer)) != -1) {
+            out.write(buffer, 0, read);
+        }
+
+        in.close();
+        out.close();
+    }
+
+    public static void sleep(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    public static void wait(Object lock, long millis) {
+        try {
+            lock.wait(millis);
+        } catch (InterruptedException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    public static int toIntExact(long value) {
+        if ((int) value != value) {
+            throw new ArithmeticException("integer overflow");
+        }
+        return (int) value;
+    }
+
+    public static <T> List<T> immutableList(T... elements) {
+        return Collections.unmodifiableList(Arrays.asList(elements.clone()));
+    }
 
 }
