@@ -44,8 +44,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
-import org.jivesoftware.smack.chat2.Chat;
-
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Collections;
@@ -154,12 +152,12 @@ public class GroupService extends Service implements
     }
 
     @Override
-    public void handleMessage(CormorantMessage cormorantMessage, Chat chat) {
+    public void handleMessage(CormorantMessage cormorantMessage, String source) {
         Log.v(LOG_TAG, "Handling Message:" + cormorantMessage);
         if (cormorantMessage instanceof GroupChallengeRequest) {
-            receiveChallengeRequest((GroupChallengeRequest) cormorantMessage, chat);
+            receiveChallengeRequest((GroupChallengeRequest) cormorantMessage, source);
         } else if (cormorantMessage instanceof GroupChallengeResponse) {
-            checkChallengeResponse((GroupChallengeResponse) cormorantMessage, chat);
+            checkChallengeResponse((GroupChallengeResponse) cormorantMessage, source);
         } else if (cormorantMessage instanceof GroupUpdateMessage) {
             receiveGroupUpdate((GroupUpdateMessage) cormorantMessage);
         } else Log.w(LOG_TAG, "MessageType unknown" + cormorantMessage.getClass());
@@ -216,8 +214,8 @@ public class GroupService extends Service implements
         return pin;
     }
 
-    private void checkChallengeResponse(GroupChallengeResponse groupChallengeResponse, Chat chat) {
-        Log.d(LOG_TAG, "Checking ChallengeResponse from " + chat.getXmppAddressOfChatPartner());
+    private void checkChallengeResponse(GroupChallengeResponse groupChallengeResponse, String source) {
+        Log.d(LOG_TAG, "Checking ChallengeResponse from " + source);
         if (currentGroupChallenge.getPin() == groupChallengeResponse.getPin()) {
             addTrustedDevice(groupChallengeResponse.getTrustedDevice());
             sendBroadcast(new Intent(DialogPinShowActivity.COMMAND_CLOSE));
@@ -229,8 +227,8 @@ public class GroupService extends Service implements
     //<-- DEVICE A
 
     //--> DEVICE B
-    private void receiveChallengeRequest(GroupChallengeRequest groupChallengeRequest, Chat chat) {
-        Log.d(LOG_TAG, "Received ChallengeRequest from " + chat.getXmppAddressOfChatPartner());
+    private void receiveChallengeRequest(GroupChallengeRequest groupChallengeRequest, String source) {
+        Log.d(LOG_TAG, "Received ChallengeRequest from " + source);
 
         Intent intent = new Intent(this, DialogPinEnterActivity.class);
         intent.putExtra(DialogPinEnterActivity.KEY_SENDER_JABBER_ID, groupChallengeRequest.getSenderDeviceId());

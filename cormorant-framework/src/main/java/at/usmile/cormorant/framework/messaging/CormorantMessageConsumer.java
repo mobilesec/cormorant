@@ -20,8 +20,6 @@
  */
 package at.usmile.cormorant.framework.messaging;
 
-import org.jivesoftware.smack.chat2.Chat;
-
 public interface CormorantMessageConsumer {
-    public void handleMessage(CormorantMessage cormorantMessage, Chat chat);
+    public void handleMessage(CormorantMessage cormorantMessage, String source);
 }

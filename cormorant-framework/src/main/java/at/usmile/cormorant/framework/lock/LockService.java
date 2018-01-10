@@ -28,8 +28,6 @@ import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
-import org.jivesoftware.smack.chat2.Chat;
-
 import java.util.LinkedList;
 import java.util.List;
 
@@ -107,7 +105,7 @@ public class LockService extends Service implements CormorantMessageConsumer {
     }
 
     @Override
-    public void handleMessage(CormorantMessage cormorantMessage, Chat chat) {
+    public void handleMessage(CormorantMessage cormorantMessage, String source) {
         Log.d(LOG_TAG, "handleMessage(" + cormorantMessage + ")");
 
         if (cormorantMessage instanceof DeviceLockCommand) {
