@@ -18,25 +18,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package at.usmile.cormorant.framework.location.bluetooth;
+package at.usmile.cormorant.framework.messaging;
 
-import java.nio.ByteBuffer;
 import java.util.UUID;
 
-public class UuidHelper {
-    public static byte[] getBytesFromUuid(UUID uuid) {
-        ByteBuffer bb = ByteBuffer.wrap(new byte[16]);
-        bb.putLong(uuid.getMostSignificantBits());
-        bb.putLong(uuid.getLeastSignificantBits());
+/**
+ * Created by hintzed on 1/16/18.
+ */
 
-        return bb.array();
-    }
+public interface IConnectionListener {
 
-    public static UUID getUuidFromBytes(byte[] bytes) {
-        ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
-        Long high = byteBuffer.getLong();
-        Long low = byteBuffer.getLong();
+    public void connected(UUID id);
 
-        return new UUID(high, low);
-    }
 }

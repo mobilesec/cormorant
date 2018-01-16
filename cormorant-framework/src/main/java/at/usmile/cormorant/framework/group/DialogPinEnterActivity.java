@@ -20,24 +20,23 @@
  */
 package at.usmile.cormorant.framework.group;
 
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.EditText;
+
+import java.util.UUID;
 
 import at.usmile.cormorant.framework.R;
 import at.usmile.cormorant.framework.common.TypedServiceConnection;
 
 public class DialogPinEnterActivity extends AppCompatActivity {
 
-    public static final String KEY_SENDER_JABBER_ID = "senderJabberId";
+    public static final String KEY_SENDER_ID = "senderId";
 
-    private String senderJabberId;
+    private UUID senderId;
 
     private TypedServiceConnection<GroupService> groupService = new TypedServiceConnection<>();
 
@@ -45,7 +44,7 @@ public class DialogPinEnterActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dialog_pin_enter);
-        senderJabberId = getIntent().getStringExtra(KEY_SENDER_JABBER_ID);
+        senderId = UUID.fromString( getIntent().getStringExtra(KEY_SENDER_ID));
 
         bindService(new Intent(this, GroupService.class), groupService, Context.BIND_AUTO_CREATE);
     }
@@ -58,7 +57,7 @@ public class DialogPinEnterActivity extends AppCompatActivity {
 
     public void setPin(View view) {
         EditText editPin = (EditText) findViewById(R.id.editPin);
-        groupService.get().respondToChallengeRequest(Integer.parseInt(editPin.getText().toString()), new TrustedDevice(senderJabberId));
+        groupService.get().respondToChallengeRequest(Integer.parseInt(editPin.getText().toString()), new TrustedDevice(senderId));
         finish();
     }
 

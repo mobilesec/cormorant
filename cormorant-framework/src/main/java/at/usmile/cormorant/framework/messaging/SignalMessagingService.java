@@ -1,17 +1,17 @@
 /**
  * Copyright 2016 - 2017
- * <p>
+ *
  * Daniel Hintze <daniel.hintze@fhdw.de>
  * Sebastian Scholz <sebastian.scholz@fhdw.de>
  * Rainhard D. Findling <rainhard.findling@fh-hagenberg.at>
  * Muhammad Muaaz <muhammad.muaaz@usmile.at>
- * <p>
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,31 +38,25 @@ import org.thoughtcrime.securesms.crypto.IdentityKeyUtil;
 import org.thoughtcrime.securesms.crypto.PreKeyUtil;
 import org.thoughtcrime.securesms.crypto.storage.SignalParameter;
 import org.thoughtcrime.securesms.crypto.storage.SignalProtocolStoreImpl;
-import org.whispersystems.libsignal.InvalidVersionException;
 import org.whispersystems.libsignal.state.SignedPreKeyRecord;
 import org.whispersystems.libsignal.util.guava.Optional;
 import org.whispersystems.signalservice.api.SignalServiceAccountManager;
-import org.whispersystems.signalservice.api.SignalServiceMessagePipe;
 import org.whispersystems.signalservice.api.SignalServiceMessageReceiver;
 import org.whispersystems.signalservice.api.SignalServiceMessageSender;
-import org.whispersystems.signalservice.api.crypto.SignalServiceCipher;
-import org.whispersystems.signalservice.api.messages.SignalServiceContent;
+import org.whispersystems.signalservice.api.crypto.UntrustedIdentityException;
 import org.whispersystems.signalservice.api.messages.SignalServiceDataMessage;
 import org.whispersystems.signalservice.api.push.SignalServiceAddress;
-import org.whispersystems.signalservice.api.websocket.ConnectivityListener;
 import org.whispersystems.signalservice.internal.configuration.SignalServiceConfiguration;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import at.usmile.cormorant.framework.common.TypedServiceBinder;
-import at.usmile.cormorant.framework.group.GroupChallengeRequest;
-import at.usmile.cormorant.framework.group.GroupChallengeResponse;
-import at.usmile.cormorant.framework.group.GroupUpdateMessage;
 import at.usmile.cormorant.framework.group.TrustedDevice;
-import at.usmile.cormorant.framework.lock.DeviceLockCommand;
 
 public class SignalMessagingService extends Service {
 
@@ -73,17 +67,19 @@ public class SignalMessagingService extends Service {
 
     private final Gson gson = new GsonBuilder().create();
 
-    private SignalParameter signalParameter;
+    private SignalParameter param;
 
     private SignalServiceAccountManager accountManager;
-    private SignalServiceMessageSender messageSender;
     private SignalServiceMessageReceiver messageReceiver;
+    private SignalServiceConfiguration config;
 
-    private SignalServiceMessagePipe messagePipe;
-
+    private Set<IConnectionListener> connectionListeners = new HashSet<>();
     private ListMultimap<CormorantMessage.TYPE, CormorantMessageConsumer> messageListeners = ArrayListMultimap.create();
-    private List<DeviceIdListener> deviceIdListeners = new LinkedList<>();
     private SignalProtocolStoreImpl signalProtocolStore;
+
+    private SignalListenTask listenTask;
+
+    private ExecutorService listenPool = Executors.newFixedThreadPool(1);
 
     @Override
     public void onCreate() {
@@ -91,62 +87,34 @@ public class SignalMessagingService extends Service {
 
         SharedPreferences prefs = getSharedPreferences(SignalParameter.PREFERENCE_NAME, Context.MODE_PRIVATE);
         if (!SignalParameter.isPresent(prefs)) {
-            signalParameter = SignalParameter.init();
-            IdentityKeyUtil.saveIdentityKeys(this, signalParameter.getIdentityKey());
+            param = SignalParameter.init();
+            param.save(prefs);
+            IdentityKeyUtil.saveIdentityKeys(this, param.getIdentityKey());
         } else {
-            signalParameter = SignalParameter.load(prefs);
+            param = SignalParameter.load(prefs);
         }
 
-        Log.i(LOG_TAG, signalParameter.toString());
-
-        SignalServiceConfiguration serviceConfiguration = SignalParameter.getServiceConfiguration(new CormorantTrustStore(this));
-
-        accountManager = new SignalServiceAccountManager(serviceConfiguration, signalParameter.getUser(), signalParameter.getPassword(), USER_AGENT);
-
-        if (signalParameter.isNew()) {
-            new CreateAccountTask(prefs).execute();
-        }
-
+        config = SignalParameter.getServiceConfiguration(new CormorantTrustStore(this));
+        accountManager = new SignalServiceAccountManager(config, param.getUser().toString(), param.getPassword(), USER_AGENT);
+        messageReceiver = new SignalServiceMessageReceiver(config, param.getUser().toString(), param.getPassword(), param.getSignalingKey(), USER_AGENT, new SignalConnectivityListener());
         signalProtocolStore = new SignalProtocolStoreImpl(this);
+        listenTask = new SignalListenTask(param, messageReceiver, signalProtocolStore, messageListeners, connectionListeners);
+
+        if (param.isNew()) {
+            // create account and start listening laster
+            new CreateAccountTask(prefs).execute();
+        } else {
+            // immediately start listening
+            listenPool.execute(listenTask);
+        }
 
 
-        messageSender = new SignalServiceMessageSender(serviceConfiguration, signalParameter.getUser(), signalParameter.getPassword(),
-                signalProtocolStore, USER_AGENT, Optional.absent(), Optional.absent());
 
-        messageReceiver = new SignalServiceMessageReceiver(serviceConfiguration, signalParameter.getUser(), signalParameter.getPassword(), signalParameter.getSignalingKey(), USER_AGENT,
-                new ConnectivityListener() {
-
-                    @Override
-                    public void onDisconnected() {
-                        System.out.println(
-                                "SignaleMessagingService.SignaleMessagingService(...).new ConnectivityListener() {...}.onDisconnected()");
-                    }
-
-                    @Override
-                    public void onConnecting() {
-                        System.out
-                                .println("SignaleMessagingService.SignaleMessagingService(...).new ConnectivityListener() {...}.onConnecting()");
-                    }
-
-                    @Override
-                    public void onConnected() {
-                        System.out.println("SignaleMessagingService.SignaleMessagingService(...).new ConnectivityListener() {...}.onConnected()");
-                    }
-
-                    @Override
-                    public void onAuthenticationFailure() {
-                        System.out.println(
-                                "SignaleMessagingService.SignaleMessagingService(...).new ConnectivityListener() {...}.onAuthenticationFailure()");
-                    }
-                });
-
-        Log.w(LOG_TAG, signalParameter.toString());
-
-        new ListenTask().execute();
+        Log.w(LOG_TAG, param.toString());
     }
 
-    public String getDeviceID() {
-        return signalParameter.getUser();
+    public UUID getDeviceID() {
+        return param.getUser();
     }
 
     public void addMessageListener(CormorantMessage.TYPE messageType, CormorantMessageConsumer messageConsumer) {
@@ -161,99 +129,23 @@ public class SignalMessagingService extends Service {
             Log.w(LOG_TAG, "MessageConsumer not found");
     }
 
-    public void addDeviceIdListener(DeviceIdListener deviceIdListener) {
-        this.deviceIdListeners.add(deviceIdListener);
-    }
+    private class MessageSendTask extends AsyncTask<String, String, Void> {
 
-    public void removeDeviceIdListener(DeviceIdListener deviceIdListener) {
-        this.deviceIdListeners.remove(deviceIdListener);
-    }
+        SignalServiceMessageSender messageSender = new SignalServiceMessageSender(config, param.getUser().toString(), param.getPassword(),
+                signalProtocolStore, USER_AGENT, Optional.absent(), Optional.absent());
 
-    public void send(String recipient, String msg) throws Exception {
-        Log.d(LOG_TAG, "send message to " + recipient);
-
-        messageSender.sendMessage(new SignalServiceAddress(recipient),
-                SignalServiceDataMessage.newBuilder().withBody(msg).build());
-    }
-
-
-    private void listen() throws Exception {
-        while (true) {
-            Log.w(LOG_TAG, "Waiting for websocket state change....");
-            //waitForConnectionNecessary();
-
-            Log.w(LOG_TAG, "Making websocket connection....");
-            messagePipe = messageReceiver.createMessagePipe();
-
-            SignalServiceMessagePipe localPipe = messagePipe;
-
-            try {
-                while (true) {
-                    try {
-                        Log.w(LOG_TAG, "Reading message...");
-                        localPipe.read(1, TimeUnit.MINUTES,
-                                envelope -> {
-                                    Log.w(LOG_TAG, "Retrieved envelope! " + envelope.getSource());
-
-                                    SignalServiceCipher cipher = new SignalServiceCipher(new SignalServiceAddress(signalParameter.getUser()), signalProtocolStore);
-                                    try {
-                                        Log.w(LOG_TAG, "Decrypting");
-                                        SignalServiceContent message = cipher.decrypt(envelope);
-                                        Log.w(LOG_TAG, "Received message: " + message.getDataMessage().get().getBody().get());
-
-                                        final CormorantMessage cormorantMessage = parseMessage(message.getDataMessage().get().getBody().get());
-                                        if (cormorantMessage == null) return;
-                                        List<CormorantMessageConsumer> messageConsumers = messageListeners.get(cormorantMessage.getType());
-                                        if (messageConsumers != null) {
-                                            for (CormorantMessageConsumer eachConsumer : messageConsumers) {
-                                                eachConsumer.handleMessage(cormorantMessage, envelope.getSource());
-                                            }
-                                        }
-                                    } catch (Exception e) {
-                                        Log.w(LOG_TAG, e);
-                                        throw new RuntimeException(e);
-                                    }
-                                });
-                    } catch (TimeoutException e) {
-                        Log.w(LOG_TAG, "Application level read timeout...");
-                    } catch (InvalidVersionException e) {
-                        Log.w(LOG_TAG, e);
-                    }
-                }
-            } catch (Throwable e) {
-                Log.w(LOG_TAG, e);
-            } finally {
-                Log.w(LOG_TAG, "Shutting down pipe...");
-                localPipe.shutdown();
-            }
-
-            Log.w(LOG_TAG, "Looping...");
-        }
-
-    }
-
-    private class SendMessageTask extends AsyncTask<String, Void, Void> {
 
         @Override
         protected Void doInBackground(String... strings) {
             try {
-                send(strings[0], strings[1]);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+                SignalServiceAddress recipient = new SignalServiceAddress(strings[0]);
+                SignalServiceDataMessage message = SignalServiceDataMessage.newBuilder().withBody(strings[1]).build();
 
-            return null;
-        }
-    }
+                Log.w(LOG_TAG, "Sending message to " + recipient + "(" + message + ")");
 
-    private class ListenTask extends AsyncTask<Void, Void, Void> {
-
-        @Override
-        protected Void doInBackground(Void... voids) {
-            try {
-                listen();
-            } catch (Exception e) {
-                e.printStackTrace();
+                messageSender.sendMessage(recipient, message);
+            } catch (UntrustedIdentityException | IOException e) {
+                Log.e(LOG_TAG, e.getMessage(), e);
             }
 
             return null;
@@ -275,22 +167,24 @@ public class SignalMessagingService extends Service {
                 String scope = "GCM";
                 String gcmToken = InstanceID.getInstance(SignalMessagingService.this).getToken(authorizedEntity, scope);
 
-
-                SignedPreKeyRecord signedPreKey = PreKeyUtil.generateSignedPreKey(SignalMessagingService.this, signalParameter.getIdentityKey(), true);
-                accountManager.createCormorantAccount(signalParameter.getSignalingKey(), signalParameter.getRegistrationId(), true);
-                accountManager.setPreKeys(signalParameter.getIdentityKey().getPublicKey(), signedPreKey, signalParameter.getOneTimePreKeys());
+                SignedPreKeyRecord signedPreKey = PreKeyUtil.generateSignedPreKey(SignalMessagingService.this, param.getIdentityKey(), true);
+                accountManager.createCormorantAccount(param.getSignalingKey(), param.getRegistrationId(), true);
+                accountManager.setPreKeys(param.getIdentityKey().getPublicKey(), signedPreKey, param.getOneTimePreKeys());
                 accountManager.setGcmId(Optional.of(gcmToken));
-                signalParameter.setGcmId(gcmToken);
-                signalParameter.save(prefs);
+                param.setGcmId(gcmToken);
+                param.setAccountCreated();
+                param.save(prefs);
 
                 signalProtocolStore.storeSignedPreKey(0, signedPreKey);
-                for (int i = 0; i < signalParameter.getOneTimePreKeys().size(); i++) {
-                    signalProtocolStore.storePreKey(i, signalParameter.getOneTimePreKeys().get(i));
+                for (int i = 0; i < param.getOneTimePreKeys().size(); i++) {
+                    signalProtocolStore.storePreKey(i, param.getOneTimePreKeys().get(i));
                 }
 
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
+
+            listenPool.execute(listenTask);
 
             return null;
         }
@@ -304,38 +198,31 @@ public class SignalMessagingService extends Service {
         return message;
     }
 
-    private CormorantMessage parseMessage(String message) {
-        String[] parts = message.split(MESSAGE_SPLIT_CHAR);
-        if (CormorantMessage.CLASS.GROUP_CHALLENGE_REQUEST.toString().equals(parts[0])) {
-            return gson.fromJson(parts[1], GroupChallengeRequest.class);
-        } else if (CormorantMessage.CLASS.GROUP_CHALLENGE_RESPONSE.toString().equals(parts[0])) {
-            return gson.fromJson(parts[1], GroupChallengeResponse.class);
-        } else if (CormorantMessage.CLASS.GROUP_UPDATE.toString().equals(parts[0])) {
-            return gson.fromJson(parts[1], GroupUpdateMessage.class);
-        } else if (CormorantMessage.CLASS.DEVICE_LOCK_COMMAND.toString().equals(parts[0])) {
-            return gson.fromJson(parts[1], DeviceLockCommand.class);
-        } else {
-            Log.w(LOG_TAG, "ClassType unknown" + parts[0]);
-            return null;
-        }
+
+    public void sendMessage(UUID recipient, String message) {
+        Log.w(LOG_TAG, "sending message to " + recipient + ": " + message);
+
+        new MessageSendTask().execute(recipient.toString(), message);
     }
 
     public void sendMessage(TrustedDevice device, CormorantMessage cormorantMessage) {
-        Log.w(LOG_TAG, "sendMessage(" + createMessage(cormorantMessage) + ")");
-
-        new SendMessageTask().execute(device.getId(), createMessage(cormorantMessage));
+        sendMessage(device.getId(), createMessage(cormorantMessage));
     }
-
-  /*  private void updateDeviceId(String jabberId) {
-        for (DeviceIdListener eachDeviceIdListener : this.deviceIdListeners) {
-            eachDeviceIdListener.setJabberId(jabberId);
-        }
-    }*/
 
     @Override
     public void onDestroy() {
-        messagePipe.shutdown();
+        listenPool.shutdown();
+        listenTask.shutdown();
+
         Log.d(LOG_TAG, "MessagingService stopped");
+    }
+
+    public void addConnectionListener(IConnectionListener listener) {
+        connectionListeners.add(listener);
+    }
+
+    public void removeConnectionListener(IConnectionListener listener) {
+        connectionListeners.remove(listener);
     }
 
 

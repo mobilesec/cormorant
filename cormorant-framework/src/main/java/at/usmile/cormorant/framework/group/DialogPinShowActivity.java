@@ -21,17 +21,16 @@
 package at.usmile.cormorant.framework.group;
 
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.ServiceConnection;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
+
+import java.util.UUID;
 
 import at.usmile.cormorant.framework.R;
 import at.usmile.cormorant.framework.common.TypedServiceConnection;
@@ -41,7 +40,7 @@ import static at.usmile.cormorant.framework.group.GroupService.CHALLENGE_REQUEST
 public class DialogPinShowActivity extends AppCompatActivity {
     private final static String LOG_TAG = DialogPinShowActivity.class.getSimpleName();
 
-    public static final String KEY_JABBER_ID = "jabberId";
+    public static final String KEY_ID = "id";
     public static final String KEY_PIN = "pin";
     public static final int PIN_DEFAULT = -1;
 
@@ -52,7 +51,7 @@ public class DialogPinShowActivity extends AppCompatActivity {
     private TypedServiceConnection<GroupService> groupService = new TypedServiceConnection<>();
 
     private TextView txtPin;
-    private String jabberId;
+    private UUID id;
     private TextView txtStatus;
 
     @Override
@@ -69,7 +68,7 @@ public class DialogPinShowActivity extends AppCompatActivity {
         txtStatus = (TextView) findViewById(R.id.txtStatus);
         txtPin = (TextView) findViewById(R.id.txtPin);
         txtPin.setText(String.valueOf(getIntent().getIntExtra(KEY_PIN, PIN_DEFAULT)));
-        jabberId = getIntent().getStringExtra(KEY_JABBER_ID);
+        id = UUID.fromString(getIntent().getStringExtra(KEY_ID));
     }
 
     @Override
@@ -98,9 +97,9 @@ public class DialogPinShowActivity extends AppCompatActivity {
     };
 
     public void retryPin(View view) {
-        int pin = groupService.get().sendChallengeRequest(new TrustedDevice(jabberId));
+        int pin = groupService.get().sendChallengeRequest(new TrustedDevice(id));
         if(pin == CHALLENGE_REQUEST_CANCELED) finish();
-        Log.d(LOG_TAG, "Retrying challenge with jabberId: " + jabberId);
+        Log.d(LOG_TAG, "Retrying challenge with id: " + id);
         txtPin.setText(String.valueOf(pin));
         txtStatus.setText("");
         findViewById(R.id.buttonRetryPin).setEnabled(false);

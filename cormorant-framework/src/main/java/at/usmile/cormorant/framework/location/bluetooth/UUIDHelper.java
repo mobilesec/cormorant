@@ -18,28 +18,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package at.usmile.cormorant.framework.group;
+package at.usmile.cormorant.framework.location.bluetooth;
 
+import java.nio.ByteBuffer;
 import java.util.UUID;
 
-import at.usmile.cormorant.framework.messaging.CormorantMessage;
+public class UUIDHelper {
+    public static byte[] getBytesFromUuid(UUID uuid) {
+        ByteBuffer bb = ByteBuffer.wrap(new byte[16]);
+        bb.putLong(uuid.getMostSignificantBits());
+        bb.putLong(uuid.getLeastSignificantBits());
 
-public class GroupChallengeRequest extends CormorantMessage {
-    private UUID senderDeviceId;
-
-    public GroupChallengeRequest(UUID senderDeviceId) {
-        super(TYPE.GROUP, CLASS.GROUP_CHALLENGE_REQUEST);
-        this.senderDeviceId = senderDeviceId;
+        return bb.array();
     }
 
-    public UUID getSenderDeviceId() {
-        return senderDeviceId;
-    }
+    public static UUID getUuidFromBytes(byte[] bytes) {
+        ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
+        Long high = byteBuffer.getLong();
+        Long low = byteBuffer.getLong();
 
-    @Override
-    public String toString() {
-        return "GroupChallengeRequest{" +
-                "senderDeviceId='" + senderDeviceId + '\'' +
-                "} " + super.toString();
+        return new UUID(high, low);
     }
 }

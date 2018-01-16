@@ -20,6 +20,25 @@
  */
 package at.usmile.cormorant.framework.messaging;
 
-public interface DeviceIdListener {
-    public void setJabberId(String jabberId);
+/**
+ * Created by hintzed on 1/12/18.
+ */
+
+public class MessageEnvelope {
+
+    private final CormorantMessage message;
+
+    private final String recipient;
+
+    public MessageEnvelope(String recipient, CormorantMessage message) {
+        this.message = message;
+        this.recipient = recipient;
+    }
+    public CormorantMessage getMessage() {
+        return message;
+    }
+
+    public String getRecipient() {
+        return recipient;
+    }
 }

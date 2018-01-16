@@ -29,7 +29,6 @@ import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.os.CountDownTimer;
-import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -187,7 +186,7 @@ public class BeaconScanner {
         for (int i = 2; i <= 17; i++) {
             uuidAsBytes[i - 2] = manufacturerData[i];
         }
-        return UuidHelper.getUuidFromBytes(uuidAsBytes);
+        return UUIDHelper.getUuidFromBytes(uuidAsBytes);
     }
 
     public void addOnScanResultListener(BeaconDistanceResultListener beaconDistanceResultListener) {

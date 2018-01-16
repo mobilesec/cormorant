@@ -22,7 +22,6 @@ package at.usmile.cormorant.framework.group;
 
 import android.content.Context;
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.ContextMenu;
@@ -63,22 +62,6 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
             service.removeGroupChangeListener(GroupListActivity.this);
         }
     };
-
-    public void send(View view) {
-        System.out.println("Execute Send");
-        new AsyncTask<Void, Void, Void>() {
-            @Override
-            protected Void doInBackground(Void... voids) {
-                try {
-                    System.out.println("Background Send");
-                    messagingService.get().send("cc046161-82b0-4ae2-a472-9fc424822fa5", "TestMessage");
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                return null;
-            }
-        }.execute();
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -209,21 +192,21 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
                         String gpsAddress = "Address: UNKNOWN";
                         double gpsDistance = TrustedDevice.DEVICE_UNKNOWN_GPS_DISTANCE;
 
-                        if(trustedDevice.equals(groupService.get().getSelf())){
-                            if(trustedDevice.getLocation() != null){
+                        if (trustedDevice.equals(groupService.get().getSelf())) {
+                            if (trustedDevice.getLocation() != null) {
                                 gpsString = String.format("GPS: %s, %s", trustedDevice.getLocation().getLatitude(),
                                         trustedDevice.getLocation().getLongitude());
                             }
-                        }
-                        else {
+                        } else {
                             gpsDistance = Math.round(trustedDevice.getDistanceToOtherDeviceGps() / 100) / 10d;
                             gpsString = "GPS distance: " + gpsDistance + "km";
                         }
 
-                        if(trustedDevice.getLocation() != null) gpsAddress = trustedDevice.getLocation().getAddress();
+                        if (trustedDevice.getLocation() != null)
+                            gpsAddress = trustedDevice.getLocation().getAddress();
 
-                        ((TextView) view.findViewById(R.id.activity_group_list_text1)).setText(trustedDevice.getId());
-                        ((TextView) view.findViewById(R.id.activity_group_list_text2)).setText(trustedDevice.getDevice());
+                        ((TextView) view.findViewById(R.id.activity_group_list_text1)).setText(trustedDevice.getId().toString());
+                        ((TextView) view.findViewById(R.id.activity_group_list_text2)).setText(trustedDevice.getManufacturer() + " " + trustedDevice.getModel());
                         ((TextView) view.findViewById(R.id.activity_group_list_text3)).setText(gpsString);
                         ((TextView) view.findViewById(R.id.activity_group_list_text4)).setText("BT distance: " + trustedDevice.getDistanceToOtherDeviceBluetooth());
                         ((TextView) view.findViewById(R.id.activity_group_list_text5)).setText("Combined distance: " + getDiscreteValue(trustedDevice, gpsDistance));
@@ -232,10 +215,10 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
                                 CommonUtils.getIconByScreenSize(trustedDevice.getScreenSize(), groupService.get().getSelf().equals(trustedDevice)));
 
                         ((ImageView) view.findViewById(R.id.activity_group_list_lock_icon)).setImageResource(
-                            trustedDevice.isLocked() ? R.drawable.ic_lock_black_24dp : R.drawable.ic_lock_open_black_24dp
+                                trustedDevice.isLocked() ? R.drawable.ic_lock_black_24dp : R.drawable.ic_lock_open_black_24dp
                         );
 
-                        if(groupService.get().getSelf().equals(trustedDevice)){
+                        if (groupService.get().getSelf().equals(trustedDevice)) {
                             ((TextView) view.findViewById(R.id.activity_group_list_text4)).setVisibility(View.GONE);
                             ((TextView) view.findViewById(R.id.activity_group_list_text5)).setVisibility(View.GONE);
                         }
@@ -248,14 +231,12 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
     private String getDiscreteValue(TrustedDevice trustedDevice, double gpsDistance) {
         DistanceHelper.DISTANCE bleDistance = trustedDevice.getDistanceToOtherDeviceBluetooth();
         String discreteValue = "UNKNOWN";
-        if(bleDistance != DistanceHelper.DISTANCE.UNKNOWN) discreteValue = bleDistance.name();
-        else if(gpsDistance >= 0 && gpsDistance < 0.1) {
+        if (bleDistance != DistanceHelper.DISTANCE.UNKNOWN) discreteValue = bleDistance.name();
+        else if (gpsDistance >= 0 && gpsDistance < 0.1) {
             discreteValue = "< 100 m";
-        }
-        else if(gpsDistance >= 0.1 && gpsDistance < 5) {
+        } else if (gpsDistance >= 0.1 && gpsDistance < 5) {
             discreteValue = "< 5 km";
-        }
-        else if(gpsDistance > 5) {
+        } else if (gpsDistance > 5) {
             discreteValue = "> 5 km";
         }
         return discreteValue;
@@ -263,7 +244,7 @@ public class GroupListActivity extends AppCompatActivity implements GroupChangeL
 
     @Override
     public void groupChanged() {
-        if(groupService.isBound()) runOnUiThread(() -> createArrayAdapter());
+        if (groupService.isBound()) runOnUiThread(() -> createArrayAdapter());
     }
 
     private TrustedDevice getDeviceFromGroupListView(View view) {

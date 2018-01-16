@@ -20,21 +20,23 @@
  */
 package at.usmile.cormorant.framework.group;
 
+import java.util.UUID;
+
 public class GroupChallenge {
     private int pin;
-    private String jabberId;
+    private UUID id;
 
-    public GroupChallenge(int pin, String jabberId) {
+    public GroupChallenge(int pin, UUID id) {
         this.pin = pin;
-        this.jabberId = jabberId;
+        this.id = id;
     }
 
     public int getPin() {
         return pin;
     }
 
-    public String getJabberId() {
-        return jabberId;
+    public UUID getId() {
+        return id;
     }
 
     @Override
@@ -45,14 +47,14 @@ public class GroupChallenge {
         GroupChallenge that = (GroupChallenge) o;
 
         if (pin != that.pin) return false;
-        return jabberId.equals(that.jabberId);
+        return id.equals(that.id);
 
     }
 
     @Override
     public int hashCode() {
         int result = pin;
-        result = 31 * result + jabberId.hashCode();
+        result = 31 * result + id.hashCode();
         return result;
     }
 }

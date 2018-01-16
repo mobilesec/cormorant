@@ -66,7 +66,7 @@ public class BeaconPublisher {
 
 
     private AdvertiseData createAdvertiseData(UUID uuid, int txPower) {
-        byte[] uuidAsBytes = UuidHelper.getBytesFromUuid(uuid);
+        byte[] uuidAsBytes = UUIDHelper.getBytesFromUuid(uuid);
         AdvertiseData.Builder mBuilder = new AdvertiseData.Builder();
         ByteBuffer mManufacturerData = ByteBuffer.allocate(24);
 

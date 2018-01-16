@@ -25,11 +25,10 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
-import android.location.Location;
+import android.os.Bundle;
 import android.support.annotation.DrawableRes;
 import android.support.v4.content.res.ResourcesCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -43,8 +42,6 @@ import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-import java.security.acl.Group;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -100,7 +97,7 @@ public class GroupMapActivity extends AppCompatActivity implements OnMapReadyCal
                     .icon(markerIcon)
                     .anchor(0.5f, 0.5f)
                     .snippet((eachDevice.getDistanceToOtherDeviceGps() / 100) / 10d + "km")
-                    .title(eachDevice.getDevice()));
+                    .title(eachDevice.getManufacturer() + " " + eachDevice.getModel()));
             createdMarkers.add(mapMarker);
             mapMarker.showInfoWindow();
         });

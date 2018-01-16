@@ -51,7 +51,7 @@ public class SignalParameter {
 
     private static final String URL = "https://cormorant.hintze-it.de";
 
-    public static final String PREFERENCE_NAME = "cormorant1";
+    public static final String PREFERENCE_NAME = "cormorant_x";
 
     private static final String PREF_SIGNAL_USER = "signalUser";
     private static final String PREF_SIGNAL_PASSWORD = "signalPassword";
@@ -59,19 +59,21 @@ public class SignalParameter {
     private static final String PREF_SIGNAL_REG_ID = "signalRegId";
     private static final String PREF_SIGNAL_PRE_KEYS = "signalPreKey";
     private static final String PREF_SIGNAL_IDENTITY_KEY = "signalIdentityKey";
+    private static final String PREF_SIGNAL_ACCOUNT_CREATED = "signalAccountCreated";
 
     private IdentityKeyPair identityKey;
     private List<PreKeyRecord> oneTimePreKeys;
 
-    private String user;
+    private UUID user;
     private String password;
     private String signalingKey;
     private int registrationId;
     private boolean isNew;
     private String gcmId;
+    private boolean accountCreated;
 
     public static boolean isPresent(SharedPreferences preferences) {
-        return preferences.contains(PREF_SIGNAL_USER);
+        return preferences.getBoolean(PREF_SIGNAL_ACCOUNT_CREATED, false);
     }
 
     public static SignalServiceConfiguration getServiceConfiguration(TrustStore trustStore) {
@@ -81,12 +83,12 @@ public class SignalParameter {
     public static SignalParameter init() {
         SignalParameter parameter = new SignalParameter();
 
-        parameter.user = UUID.randomUUID().toString();
+        parameter.user = UUID.randomUUID();
         parameter.password = Util.getSecret(10);
         parameter.signalingKey = Util.getSecret(52);
         parameter.registrationId = generateRandomInstallId();
         parameter.identityKey = KeyHelper.generateIdentityKeyPair();
-        parameter.oneTimePreKeys = KeyHelper.generatePreKeys(0, 100);
+        parameter.oneTimePreKeys = KeyHelper.generatePreKeys(0, 1000);
         parameter.isNew = true;
 
         Log.i(LOG_TAG, "Generating new signal parameter for user " + parameter.user);
@@ -98,7 +100,7 @@ public class SignalParameter {
         SignalParameter parameter = new SignalParameter();
 
         try {
-            parameter.user = preferences.getString(PREF_SIGNAL_USER, null);
+            parameter.user = UUID.fromString(preferences.getString(PREF_SIGNAL_USER, null));
             parameter.password = preferences.getString(PREF_SIGNAL_PASSWORD, null);
             parameter.signalingKey = preferences.getString(PREF_SIGNAL_KEY, null);
             parameter.registrationId = preferences.getInt(PREF_SIGNAL_REG_ID, -1);
@@ -113,7 +115,7 @@ public class SignalParameter {
 
     public void save(SharedPreferences preferences) {
         preferences.edit()
-                .putString(PREF_SIGNAL_USER, user)
+                .putString(PREF_SIGNAL_USER, user.toString())
                 .putString(PREF_SIGNAL_PASSWORD, password)
                 .putString(PREF_SIGNAL_KEY, signalingKey)
                 .putInt(PREF_SIGNAL_REG_ID, registrationId)
@@ -141,11 +143,15 @@ public class SignalParameter {
 
     }
 
+    public void setAccountCreated() {
+        this.accountCreated = accountCreated;
+    }
+
     private static int generateRandomInstallId() {
         return (int) Math.random() * Integer.MAX_VALUE;
     }
 
-    public String getUser() {
+    public UUID getUser() {
         return user;
     }
 

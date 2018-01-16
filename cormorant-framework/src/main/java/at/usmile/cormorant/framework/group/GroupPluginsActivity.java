@@ -20,22 +20,17 @@
  */
 package at.usmile.cormorant.framework.group;
 
-import android.app.Activity;
-import android.content.Intent;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
 import java.text.SimpleDateFormat;
-import java.util.LinkedList;
 
 import at.usmile.cormorant.api.CormorantConstants;
-import at.usmile.cormorant.api.model.StatusDataConfidence;
 import at.usmile.cormorant.framework.R;
 
 public class GroupPluginsActivity extends AppCompatActivity {

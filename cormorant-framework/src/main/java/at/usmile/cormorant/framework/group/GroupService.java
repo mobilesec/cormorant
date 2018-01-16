@@ -44,6 +44,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
+import org.thoughtcrime.securesms.crypto.storage.SignalParameter;
+
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.Collections;
@@ -62,23 +64,22 @@ import at.usmile.cormorant.framework.location.bluetooth.DistanceHelper;
 import at.usmile.cormorant.framework.lock.LockService;
 import at.usmile.cormorant.framework.messaging.CormorantMessage;
 import at.usmile.cormorant.framework.messaging.CormorantMessageConsumer;
-import at.usmile.cormorant.framework.messaging.DeviceIdListener;
+import at.usmile.cormorant.framework.messaging.IConnectionListener;
 import at.usmile.cormorant.framework.messaging.SignalMessagingService;
 import at.usmile.cormorant.framework.plugin.PluginInfo;
 import at.usmile.cormorant.framework.plugin.PluginManager;
 
 public class GroupService extends Service implements
-        CormorantMessageConsumer, DeviceIdListener, BeaconScanner.BeaconDistanceResultListener,
+        CormorantMessageConsumer,  BeaconScanner.BeaconDistanceResultListener,
         CoarseDeviceDistanceHelper.CoarseDistanceListener,
         PluginManager.PluginChangeListener,
-        LockService.LockStateListener {
+        LockService.LockStateListener, IConnectionListener {
 
     public final static int CHALLENGE_REQUEST_CANCELED = -1;
     private final static int PIN_LENGTH = 4;
     private final static String LOG_TAG = GroupService.class.getSimpleName();
     private final Random random = new Random();
 
-    private static final String PREFERENCE_NAME = "cormorant";
     private static final String PREF_GROUP_LIST = "groupList";
     private static final String PREF_GROUP_SELF = "groupSelf";
 
@@ -99,7 +100,7 @@ public class GroupService extends Service implements
     @Override
     public void onCreate() {
         Log.d(LOG_TAG, "GroupService started");
-        preferences = getSharedPreferences(PREFERENCE_NAME, Context.MODE_PRIVATE);
+        preferences = getSharedPreferences(SignalParameter.PREFERENCE_NAME, Context.MODE_PRIVATE);
         initData();
         initLocationComponents();
 
@@ -109,17 +110,23 @@ public class GroupService extends Service implements
         PluginManager.getInstance().addPluginChangeListener(this);
     }
 
-    private void initLocationComponents(){
+    private void initLocationComponents() {
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+
+        if (bluetoothAdapter == null) {
+            Log.w(LOG_TAG, "Bluetooth for beacons not available");
+            Toast.makeText(this, "Bluetooth for beacons not available", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         BluetoothLeAdvertiser bluetoothLeAdvertiser = bluetoothAdapter.getBluetoothLeAdvertiser();
         BluetoothLeScanner bluetoothLeScanner = bluetoothAdapter.getBluetoothLeScanner();
 
-        if(bluetoothAdapter != null && bluetoothLeAdvertiser != null && bluetoothLeScanner != null) {
+        if (bluetoothAdapter != null && bluetoothLeAdvertiser != null && bluetoothLeScanner != null) {
             this.beaconPublisher = new BeaconPublisher(bluetoothLeAdvertiser);
             this.beaconScanner = new BeaconScanner(bluetoothLeScanner,
                     getApplicationContext(), this);
-        }
-        else {
+        } else {
             Log.w(LOG_TAG, "Bluetooth for beacons not available");
             Toast.makeText(this, "Bluetooth for beacons not available", Toast.LENGTH_SHORT).show();
         }
@@ -129,16 +136,20 @@ public class GroupService extends Service implements
     @Override
     public void onDestroy() {
         super.onDestroy();
-        messageService.get().removeMessageListener(CormorantMessage.TYPE.GROUP, this);
-        messageService.get().removeDeviceIdListener(this);
-        if (messageService.isBound()) unbindService(messageService);
+
+        if (messageService != null) {
+            messageService.get().removeMessageListener(CormorantMessage.TYPE.GROUP, this);
+            messageService.get().removeConnectionListener(this);
+            if (messageService.isBound()) unbindService(messageService);
+        }
 
         if (lockService.isBound()) unbindService(lockService);
 
-        if(beaconPublisher != null)beaconPublisher.stopBeacon();
-        if(beaconScanner != null) beaconScanner.stopScanner();
+        if (beaconPublisher != null) beaconPublisher.stopBeacon();
+        if (beaconScanner != null) beaconScanner.stopScanner();
 
-        if(coarseDeviceDistanceHelper != null) coarseDeviceDistanceHelper.unsubscribeFromLocationUpdates();
+        if (coarseDeviceDistanceHelper != null)
+            coarseDeviceDistanceHelper.unsubscribeFromLocationUpdates();
 
         PluginManager.getInstance().removePluginChangeListener(this);
     }
@@ -164,22 +175,25 @@ public class GroupService extends Service implements
     }
 
     @Override
-    public void setJabberId(String jabberId) {
+    public void connected(UUID id) {
         if (getSelf() == null) {
-            this.self = new TrustedDevice(Build.MANUFACTURER, Build.MODEL, getScreenSize(),
-                    messageService.get().getDeviceID(), UUID.randomUUID());
+            this.self = new TrustedDevice(id, Build.MANUFACTURER, Build.MODEL, getScreenSize());
+            Log.w(LOG_TAG, "self = " + id);
             saveSelf();
         }
         //TODO Raise expection if jabberId changed?
-        else if (!getSelf().getJabberId().equals(jabberId)) Log.w(LOG_TAG, "JabberId changed!");
+        else if (!getSelf().getId().equals(id)) Log.w(LOG_TAG, "Id changed!");
         if (group.isEmpty()) addTrustedDevice(getSelf());
 
         //TODO Let the user set a custom txPower value
         //Start beacon here to ensure uuid is already set.
-        if(beaconPublisher != null) beaconPublisher.startBeacon(getSelf().getUuid());
-        if(beaconScanner != null) beaconScanner.startScanner();
+        UUID uuid = getSelf().getId();
 
-        if(coarseDeviceDistanceHelper != null) coarseDeviceDistanceHelper.subscribeToLocationUpdates();
+        if (beaconPublisher != null) beaconPublisher.startBeacon(uuid);
+        if (beaconScanner != null) beaconScanner.startScanner();
+
+        if (coarseDeviceDistanceHelper != null)
+            coarseDeviceDistanceHelper.subscribeToLocationUpdates();
     }
 
     public void addGroupChangeListener(GroupChangeListener groupChangeListener) {
@@ -206,10 +220,10 @@ public class GroupService extends Service implements
         }
 
         int pin = createPin();
-        Log.d(LOG_TAG, "Sending ChallengeRequest to " + deviceToTrust.getJabberId() + " with pin: " + pin);
+        Log.d(LOG_TAG, "Sending ChallengeRequest to " + deviceToTrust.getId() + " with pin: " + pin);
 
-        this.currentGroupChallenge = new GroupChallenge(pin, deviceToTrust.getJabberId());
-        GroupChallengeRequest groupChallengeRequest = new GroupChallengeRequest(getSelf().getJabberId());
+        this.currentGroupChallenge = new GroupChallenge(pin, deviceToTrust.getId());
+        GroupChallengeRequest groupChallengeRequest = new GroupChallengeRequest(getSelf().getId());
         messageService.get().sendMessage(deviceToTrust, groupChallengeRequest);
         return pin;
     }
@@ -219,7 +233,7 @@ public class GroupService extends Service implements
         if (currentGroupChallenge.getPin() == groupChallengeResponse.getPin()) {
             addTrustedDevice(groupChallengeResponse.getTrustedDevice());
             sendBroadcast(new Intent(DialogPinShowActivity.COMMAND_CLOSE));
-            showToast("New device " + groupChallengeResponse.getTrustedDevice().getDevice() + " added successfully");
+            showToast("New device " + groupChallengeResponse.getTrustedDevice().getModel() + " added successfully");
         } else {
             sendBroadcast(new Intent(DialogPinShowActivity.COMMAND_PIN_FAILED));
         }
@@ -231,7 +245,7 @@ public class GroupService extends Service implements
         Log.d(LOG_TAG, "Received ChallengeRequest from " + source);
 
         Intent intent = new Intent(this, DialogPinEnterActivity.class);
-        intent.putExtra(DialogPinEnterActivity.KEY_SENDER_JABBER_ID, groupChallengeRequest.getSenderDeviceId());
+        intent.putExtra(DialogPinEnterActivity.KEY_SENDER_ID, groupChallengeRequest.getSenderDeviceId());
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
     }
@@ -358,6 +372,9 @@ public class GroupService extends Service implements
 
     private void initSelf() {
         String selfJson = preferences.getString(PREF_GROUP_SELF, "");
+
+        Log.w(LOG_TAG, selfJson);
+
         if (selfJson.isEmpty()) this.group = new LinkedList<>();
         else {
             this.self = gson.fromJson(selfJson, TrustedDevice.class);
@@ -374,13 +391,13 @@ public class GroupService extends Service implements
         @Override
         public void onServiceConnected(SignalMessagingService service) {
             service.addMessageListener(CormorantMessage.TYPE.GROUP, GroupService.this);
-            service.addDeviceIdListener(GroupService.this);
+            service.addConnectionListener(GroupService.this);
         }
 
         @Override
         public void onServiceDisconnected(SignalMessagingService service) {
-            service.removeMessageListener(CormorantMessage.TYPE.GROUP,GroupService.this);
-            service.removeDeviceIdListener(GroupService.this);
+            service.removeMessageListener(CormorantMessage.TYPE.GROUP, GroupService.this);
+            service.removeConnectionListener(GroupService.this);
         }
     };
 
@@ -400,7 +417,7 @@ public class GroupService extends Service implements
     @Override
     public void onResult(ScanResult result, DistanceHelper.DISTANCE distance, UUID uuid) {
         Log.d(LOG_TAG, String.format("Device is %s with uuid: %s", distance, uuid));
-        group.stream().filter(device -> device.getUuid().equals(uuid))
+        group.stream().filter(device -> device.getId().equals(uuid.toString()))
                 .findFirst()
                 .ifPresent(device -> device.setDistanceToOtherDeviceBluetooth(distance));
         notifyGroupChangeListeners();
@@ -415,11 +432,10 @@ public class GroupService extends Service implements
             //TODO Might have a bad performance impact
             Geocoder geocoder = new Geocoder(this, Locale.getDefault());
             List<Address> addresses = geocoder.getFromLocation(location.getLatitude(), location.getLongitude(), 1);
-            if(addresses != null && !addresses.isEmpty()) {
+            if (addresses != null && !addresses.isEmpty()) {
                 Address address = addresses.get(0);
                 getSelf().getLocation().setAddress(address.getAddressLine(0));
-            }
-            else {
+            } else {
                 getSelf().getLocation().setAddress("Address: UNKNOWN");
             }
         } catch (IOException e) {
@@ -441,8 +457,11 @@ public class GroupService extends Service implements
 
     @Override
     public void onLockStateChanged(boolean lockState) {
+        if (self == null) return;
+
         self.setLocked(lockState);
         notifyGroupChangeListeners();
         synchronizeGroupInfo();
     }
+
 }

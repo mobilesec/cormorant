@@ -24,7 +24,6 @@ import android.location.Location;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 import at.usmile.cormorant.framework.location.SimpleLocation;
@@ -34,15 +33,13 @@ public class TrustedDevice {
 
     public static final int DEVICE_UNKNOWN_GPS_DISTANCE = -1;
 
-    private String id;
+    private UUID id;
 
-    private String device;
+    private String manufacturer;
+
+    private String model;
 
     private double screenSize;
-
-    private String jabberId;
-
-    private UUID uuid;
 
     private SimpleLocation location;
 
@@ -59,39 +56,34 @@ public class TrustedDevice {
     /*
     * Only to be used by the Group Service for group challenge and response.
     * */
-    TrustedDevice(String jabberId) {
-        this(null, null, 0, jabberId, null);
+    TrustedDevice(UUID id) {
+        this(id, null, null, 0);
     }
 
-    public TrustedDevice(String id, String device, double screenSize, String jabberId, UUID uuid) {
+    public TrustedDevice(UUID id, String manufacturer, String model, double screenSize) {
         this.id = id;
-        this.device = device;
+        this.manufacturer = manufacturer;
+        this.model = model;
         this.screenSize = screenSize;
-        this.jabberId = jabberId;
-        this.uuid = uuid;
         this.distanceToOtherDeviceGps = DEVICE_UNKNOWN_GPS_DISTANCE;
         this.distanceToOtherDeviceBluetooth = DistanceHelper.DISTANCE.UNKNOWN;
         this.activePlugins = new LinkedList<>();
     }
 
-    public String getDevice() {
-        return device;
+    public String getManufacturer() {
+        return manufacturer;
     }
 
-    public String getId() {
+    public String getModel() {
+        return model;
+    }
+
+    public UUID getId() {
         return id;
     }
 
     public double getScreenSize() {
         return screenSize;
-    }
-
-    public String getJabberId() {
-        return jabberId;
-    }
-
-    public UUID getUuid() {
-        return uuid;
     }
 
     public SimpleLocation getLocation() {
@@ -127,6 +119,8 @@ public class TrustedDevice {
     }
 
     public List<PluginData> getActivePlugins() {
+        if (this.activePlugins == null) this.activePlugins = new LinkedList<>();
+
         return activePlugins;
     }
 
@@ -136,7 +130,7 @@ public class TrustedDevice {
 
     public void setActivePlugins(List<PluginData> activePlugins) {
         // I don't understand how this can be null at this point?
-        if(this.activePlugins == null) this.activePlugins = new LinkedList<>();
+        if (this.activePlugins == null) this.activePlugins = new LinkedList<>();
 
         this.activePlugins.clear();
         this.activePlugins.addAll(activePlugins);
@@ -146,27 +140,48 @@ public class TrustedDevice {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
+
         TrustedDevice that = (TrustedDevice) o;
-        return Double.compare(that.screenSize, screenSize) == 0 &&
-                Objects.equals(id, that.id) &&
-                Objects.equals(device, that.device) &&
-                Objects.equals(jabberId, that.jabberId) &&
-                Objects.equals(uuid, that.uuid);
+
+        if (Double.compare(that.screenSize, screenSize) != 0) return false;
+        if (Double.compare(that.distanceToOtherDeviceGps, distanceToOtherDeviceGps) != 0)
+            return false;
+        if (isLocked != that.isLocked) return false;
+        if (id != null ? !id.equals(that.id) : that.id != null) return false;
+        if (manufacturer != null ? !manufacturer.equals(that.manufacturer) : that.manufacturer != null)
+            return false;
+        if (model != null ? !model.equals(that.model) : that.model != null) return false;
+        if (location != null ? !location.equals(that.location) : that.location != null)
+            return false;
+        if (distanceToOtherDeviceBluetooth != that.distanceToOtherDeviceBluetooth) return false;
+        return activePlugins != null ? activePlugins.equals(that.activePlugins) : that.activePlugins == null;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, device, screenSize, jabberId, uuid);
+        int result;
+        long temp;
+        result = id != null ? id.hashCode() : 0;
+        result = 31 * result + (manufacturer != null ? manufacturer.hashCode() : 0);
+        result = 31 * result + (model != null ? model.hashCode() : 0);
+        temp = Double.doubleToLongBits(screenSize);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
+        result = 31 * result + (location != null ? location.hashCode() : 0);
+        temp = Double.doubleToLongBits(distanceToOtherDeviceGps);
+        result = 31 * result + (int) (temp ^ (temp >>> 32));
+        result = 31 * result + (distanceToOtherDeviceBluetooth != null ? distanceToOtherDeviceBluetooth.hashCode() : 0);
+        result = 31 * result + (isLocked ? 1 : 0);
+        result = 31 * result + (activePlugins != null ? activePlugins.hashCode() : 0);
+        return result;
     }
 
     @Override
     public String toString() {
         return "TrustedDevice{" +
                 "id='" + id + '\'' +
-                ", device='" + device + '\'' +
+                ", manufacturer='" + manufacturer + '\'' +
+                ", model='" + model + '\'' +
                 ", screenSize=" + screenSize +
-                ", jabberId='" + jabberId + '\'' +
-                ", uuid=" + uuid +
                 ", location=" + location +
                 ", distanceToOtherDeviceGps=" + distanceToOtherDeviceGps +
                 ", distanceToOtherDeviceBluetooth=" + distanceToOtherDeviceBluetooth +
@@ -174,5 +189,4 @@ public class TrustedDevice {
                 ", activePlugins=" + activePlugins +
                 '}';
     }
-
 }
