@@ -17,6 +17,11 @@ public class UnregisteredUserException extends IOException {
     this.e164number = e164number;
   }
 
+  @Override
+  public String getMessage() {
+    return super.getMessage() + " (" + e164number + ")";
+  }
+
   public String getE164Number() {
     return e164number;
   }

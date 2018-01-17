@@ -122,8 +122,11 @@ public class SignalListenTask implements Runnable {
         try {
             Log.w(LOG_TAG, "Decrypting");
             SignalServiceContent message = cipher.decrypt(envelope);
-            Log.w(LOG_TAG, "Received message: " + message.getDataMessage().get());
-            Log.w(LOG_TAG, "Received message: " + message.getDataMessage().get().getBody().get());
+
+            if(!message.getDataMessage().isPresent()) {
+                Log.w(LOG_TAG, "Empty message");
+                return;
+            }
 
             final CormorantMessage cormorantMessage = SignalListenTask.this.parseMessage(message.getDataMessage().get().getBody().get());
             if (cormorantMessage == null) return;

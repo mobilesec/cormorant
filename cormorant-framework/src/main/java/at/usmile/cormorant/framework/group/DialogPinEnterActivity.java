@@ -27,6 +27,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.EditText;
 
+import com.google.common.base.Preconditions;
+
 import java.util.UUID;
 
 import at.usmile.cormorant.framework.R;
@@ -44,7 +46,11 @@ public class DialogPinEnterActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dialog_pin_enter);
-        senderId = UUID.fromString( getIntent().getStringExtra(KEY_SENDER_ID));
+
+        String uuidString =  getIntent().getStringExtra(KEY_SENDER_ID);
+        Preconditions.checkNotNull(uuidString);
+
+        senderId = UUID.fromString(uuidString);
 
         bindService(new Intent(this, GroupService.class), groupService, Context.BIND_AUTO_CREATE);
     }

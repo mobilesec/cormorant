@@ -121,6 +121,7 @@ public class SignalParameter {
                 .putInt(PREF_SIGNAL_REG_ID, registrationId)
                 .putString(PREF_SIGNAL_IDENTITY_KEY, Base64.encodeToString(identityKey.serialize(), Base64.NO_WRAP))
                 .putString(PREF_SIGNAL_PRE_KEYS, asString(oneTimePreKeys))
+                .putBoolean(PREF_SIGNAL_ACCOUNT_CREATED, accountCreated)
                 .commit();
     }
 

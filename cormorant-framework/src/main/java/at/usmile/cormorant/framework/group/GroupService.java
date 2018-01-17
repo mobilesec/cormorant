@@ -245,7 +245,7 @@ public class GroupService extends Service implements
         Log.d(LOG_TAG, "Received ChallengeRequest from " + source);
 
         Intent intent = new Intent(this, DialogPinEnterActivity.class);
-        intent.putExtra(DialogPinEnterActivity.KEY_SENDER_ID, groupChallengeRequest.getSenderDeviceId());
+        intent.putExtra(DialogPinEnterActivity.KEY_SENDER_ID, groupChallengeRequest.getSenderDeviceId().toString());
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
     }
@@ -261,6 +261,8 @@ public class GroupService extends Service implements
     //TODO Do real synchronisation + how to handle offline devices during sync?
     private void synchronizeGroupInfo() {
         Log.v(LOG_TAG, "Syncing new group: " + group);
+        if(messageService.get() == null) return;
+
         for (TrustedDevice device : group) {
             if (!device.equals(getSelf())) {
                 messageService.get().sendMessage(device, new GroupUpdateMessage(group));
